@@ -1,68 +1,67 @@
-// Fictional profile names for the local template; role/copy structure follows the supplied reference.
 export const teamFounder = {
-  name: "Daniel Bennett",
-  initials: "DB",
+  name: "Michael Pid",
+  initials: "MP",
+  photo: "/images/team/michael-pid.jpg",
   role: "Founder & CEO",
   note: "Helping homeowners through life's transitions with trusted guidance and real solutions.",
-  introduction: "Hi, I'm Daniel!",
-  signature: "Daniel",
+  introduction: "Hi, I'm Michael!",
+  signature: "Michael",
   paragraphs: [
     "I know selling a home isn't always easy. Life can take unexpected turns, and sometimes all you need is someone who will listen, understand, and genuinely care.",
-    "My team and I are here to listen, understand your needs, and help you find the best way forward, with honesty, kindness, and respect.",
+    "That's why I started HomeOffer365: to create a place where homeowners are treated like family, not just another transaction.",
+    "Whether you're facing financial challenges, handling an inherited property, or ready for a fresh start, you do not have to figure it out alone.",
+    "My team and I are here to listen, understand your needs, and help you find the best path forward with honesty, kindness, and respect.",
+    "No pressure. No judgment. Just real people who genuinely care.",
   ],
 };
 
-type TeamMember = { name: string; initials: string; role: string; bio: string; note?: string };
+type TeamMember = { name: string; initials: string; photo: string; role: string; bio: string; note?: string };
 type TeamDepartment = { id: string; title: string; description: string; members: TeamMember[] };
 
 export const teamDepartments: TeamDepartment[] = [
   {
     id: "leadership", title: "Leadership & experience", description: "Guiding the work, supporting the team, and keeping people at the center.",
     members: [
-      { name: "Nathan Brooks", initials: "NB", role: "Co-Founder", bio: "Brings experience across the real estate process to help the team understand homeowners' needs and find a clear path forward.", note: "This experience has helped me understand the challenges homeowners face and how we can best help them find the right solution." },
-      { name: "Oliver Grant", initials: "OG", role: "CFO / COO", bio: "Connects financial oversight with day-to-day operations, with a focus on a fair and well-supported homeowner experience.", note: "I have an obligation to make sure our customers are treated fairly, cared for, and supported throughout the home-selling process." },
-      { name: "Sophie Mitchell", initials: "SM", role: "Experience Director", bio: "Focuses on patient communication, clear updates, and personal support throughout the homeowner's experience." },
-      { name: "Ethan Parker", initials: "EP", role: "Client Experience Manager", bio: "Helps homeowners navigate questions and uncertainty with clear answers and consistent communication." },
-      { name: "Amelia Reed", initials: "AR", role: "Operations Coordinator", bio: "Keeps workflows, communications, and team priorities organized so day-to-day work runs smoothly." },
-      { name: "Grace Collins", initials: "GC", role: "Investor Advisor", bio: "Connects properties with buyers, agents, and investors through an organized and transparent process." },
-      { name: "Benjamin Hayes", initials: "BH", role: "Agent Relations Advisor", bio: "Supports real estate agents and partners with timely answers, clear communication, and dependable collaboration." },
+      { name: "Mike", initials: "M", photo: "/images/team/mike.jpg", role: "Co-Founder", bio: "Brings more than ten years of real estate experience to helping homeowners understand their options and find a practical, pressure-free solution.", note: "My goal is to make selling your home simple and low-stress through honest advice and personal support." },
+      { name: "Eric", initials: "E", photo: "/images/team/eric.png", role: "CFO / COO", bio: "Oversees finance and operations while helping ensure every homeowner receives fair treatment, clear communication, and dependable support.", note: "Taking care of our customers is a responsibility I take personally." },
+      { name: "Ashley Sellers", initials: "AS", photo: "/images/team/ashley-sellers.jpg", role: "Experience Director", bio: "Leads the homeowner experience and sets the standard for patient, honest communication from the first conversation through closing." },
+      { name: "Mathew", initials: "M", photo: "/images/team/mathew.png", role: "Client Experience Manager", bio: "Serves as a consistent point of contact who answers questions, provides updates, and helps homeowners feel supported throughout the sale.", note: "You are never just another homeowner to us." },
+      { name: "Asha", initials: "AS", photo: "/images/team/asha.jpg", role: "Operations Coordinator", bio: "Uses her background in executive support and operations to build clear workflows, coordinate communication, and keep the team aligned." },
+      { name: "Tricia", initials: "T", photo: "/images/team/tricia.jpg", role: "Investor Advisor", bio: "Works with homebuyers, agents, and investors to connect each property with the right next owner through a smooth, transparent process." },
+      { name: "George", initials: "GF", photo: "/images/team/george.jpg", role: "Agent Relations Advisor", bio: "Builds trusted relationships with real estate agents and partners, providing timely answers and dependable support throughout each collaboration." },
     ],
-  },
-  {
-    id: "outreach", title: "Outreach", description: "Starting conversations by listening first.",
-    members: [{ name: "Lucas Morgan", initials: "LM", role: "Cold Caller", bio: "Introduces the home-selling process, listens to homeowners' needs, and connects them with the right team member." }],
   },
   {
     id: "home-buying", title: "Home buying consultants", description: "Helping homeowners understand their options and next steps.",
     members: [
-      { name: "Adrian Cruz", initials: "AC", role: "Home Solutions Specialist", bio: "Listens to each homeowner's situation and provides straightforward guidance without pressure." },
-      { name: "Caleb Foster", initials: "CF", role: "Home Solutions Specialist", bio: "Keeps homeowners informed and follows the details that help a sale move forward without guesswork." },
+      { name: "Luis", initials: "L", photo: "/images/team/luis.jpg", role: "Home Solutions Specialist", bio: "Listens carefully to each family's circumstances and offers honest, no-pressure guidance toward the solution that fits their needs." },
+      { name: "JJ", initials: "JJ", photo: "/images/team/jj.jpg", role: "Home Solutions Specialist", bio: "Tracks the details from first call through closing, keeps homeowners informed, and works to prevent surprises or unexplained delays." },
     ],
   },
   {
     id: "property-analysis", title: "Property analysis & underwriting", description: "Turning clear property information into an informed review.",
     members: [
-      { name: "Natalie Ward", initials: "NW", role: "Senior Underwriter", bio: "Reviews property and financial details to support careful, well-informed evaluations." },
-      { name: "Marcus Ellis", initials: "ME", role: "Market Analyst", bio: "Studies local market information and property values to support the team's decisions." },
+      { name: "Jen", initials: "J", photo: "/images/team/jen.jpg", role: "Senior Underwriter", bio: "Brings more than twelve years of real estate finance and property-analysis experience to preparing fair, accurate, well-supported offers." },
+      { name: "Darryl", initials: "D", photo: "/images/team/darryl.png", role: "Market Analyst", bio: "Researches local trends, property values, and market conditions so homeowners can receive accurate information and competitive solutions." },
     ],
   },
   {
     id: "transactions", title: "Transactions", description: "Keeping documents, deadlines, and communication connected.",
     members: [
-      { name: "Chloe Sullivan", initials: "CS", role: "Client Experience Coordinator", bio: "Supports homeowners with clear updates and attention to detail from agreement through closing." },
-      { name: "Isabel Turner", initials: "IT", role: "Closing Assistant", bio: "Organizes documentation, tracks deadlines, and helps communication flow between everyone involved." },
+      { name: "Hannah", initials: "HL", photo: "/images/team/hannah.jpg", role: "Client Experience Coordinator", bio: "Draws on more than ten years in real estate to provide clear updates, careful coordination, and a well-organized path from contract to closing." },
+      { name: "Irish", initials: "I", photo: "/images/team/irish.jpg", role: "Closing Assistant", bio: "Manages documentation, tracks deadlines, and keeps communication moving among team members, title companies, and clients." },
     ],
   },
   {
     id: "property-management", title: "Property management", description: "Supporting the next chapter for people and properties.",
     members: [
-      { name: "Elena Carter", initials: "EC", role: "Relocation Specialist", bio: "Helps homeowners plan their transition and connect with useful moving resources." },
-      { name: "Zoe Russell", initials: "ZR", role: "Project Coordinator", bio: "Coordinates property improvements, timelines, and project details to keep work organized." },
+      { name: "Mara", initials: "MA", photo: "/images/team/mara.jpg", role: "Relocation Specialist", bio: "Helps homeowners and families plan their next chapter, answering questions and connecting them with useful resources throughout the move." },
+      { name: "Emily", initials: "E", photo: "/images/team/emily.jpg", role: "Project Coordinator", bio: "Coordinates renovation work and property improvements, managing contractors, schedules, and budgets from small repairs to full projects." },
     ],
   },
   {
     id: "operations", title: "Operations", description: "The practical support behind a well-coordinated team.",
-    members: [{ name: "Owen Blake", initials: "OB", role: "Admin Assistant", bio: "Supports scheduling, records, and internal communication so the team can focus on homeowners." }],
+    members: [{ name: "Jenny", initials: "JE", photo: "/images/team/jenny.png", role: "Admin Assistant", bio: "Brings five years of administrative experience to scheduling, documentation, office coordination, and internal communication." }],
   },
 ];
 

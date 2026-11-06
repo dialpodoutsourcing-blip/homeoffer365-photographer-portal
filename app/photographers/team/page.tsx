@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, ArrowRight, Heart, MessageCircle, Users } from "lucide-react";
 import { PageHeading } from "@/components/layout/page-heading";
 import { teamDepartments, teamFounder } from "@/content/company-resources";
@@ -16,7 +17,7 @@ export default function TeamPage() {
       <section className="team-founder-section" aria-labelledby="founder-heading">
         <div className="team-section-heading"><span className="eyebrow">LEADERSHIP</span><h2 id="founder-heading">Leading with care.</h2><p>A personal introduction to the purpose behind the work.</p></div>
         <article className="founder-profile">
-          <div className="founder-identity"><span className="founder-avatar" aria-hidden="true">{teamFounder.initials}</span><span className="eyebrow">MEET OUR FOUNDER</span><h3>{teamFounder.name}</h3><p>{teamFounder.role}</p><span className="founder-value"><Heart size={15} aria-hidden="true" />People first. Always.</span></div>
+          <div className="founder-identity"><Image className="founder-avatar" src={teamFounder.photo} alt={`${teamFounder.name}, ${teamFounder.role}`} width={140} height={140} priority /><span className="eyebrow">MEET OUR FOUNDER</span><h3>{teamFounder.name}</h3><p>{teamFounder.role}</p><span className="founder-value"><Heart size={15} aria-hidden="true" />People first. Always.</span></div>
           <div className="founder-message"><span className="eyebrow">A PERSONAL NOTE</span><h3>{teamFounder.introduction}</h3><blockquote>{teamFounder.note}</blockquote>{teamFounder.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}<div className="founder-signature">Warmly,<strong>{teamFounder.signature}</strong></div></div>
         </article>
       </section>
@@ -29,7 +30,7 @@ export default function TeamPage() {
             <div className="team-directory-grid">
               {department.members.map((member) => (
                 <article className="team-member-card" key={member.name}>
-                  <div className="team-member-top"><span className="team-member-avatar" aria-hidden="true">{member.initials}</span><div><h3>{member.name}</h3><p>{member.role}</p></div></div>
+                  <div className="team-member-top"><Image className="team-member-avatar" src={member.photo} alt={`${member.name}, ${member.role}`} width={58} height={58} /><div><h3>{member.name}</h3><p>{member.role}</p></div></div>
                   <p className="team-member-bio">{member.bio}</p>
                   {member.note && <details className="team-personal-note"><summary><MessageCircle size={15} aria-hidden="true" />Personal note<span aria-hidden="true">+</span></summary><blockquote>{member.note}</blockquote></details>}
                 </article>

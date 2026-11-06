@@ -1,6 +1,6 @@
 import { BrandLogo } from "./brand-logo";
 import Link from "next/link";
-import { ArrowRight, ArrowUp, Heart, Headphones, Mail, Phone } from "lucide-react";
+import { ArrowRight, ArrowUp, Heart, Headphones, Mail, MapPin, Phone } from "lucide-react";
 
 const links = [
   { href: "/photographers", label: "Welcome" },
@@ -28,10 +28,10 @@ export function SiteFooter() {
             <Headphones size={23} aria-hidden="true" />
             <h2 id="footer-support-heading">Contact</h2>
             <dl className="footer-contact-details">
-              <div><dt><Mail size={15} aria-hidden="true" />Email</dt><dd>photographers@example.com</dd></div>
-              <div><dt><Phone size={15} aria-hidden="true" />Phone</dt><dd>+1 (202) 555-0148</dd></div>
+              <div><dt><Phone size={15} aria-hidden="true" />Phone</dt><dd><a href="tel:+12407928488">(240) 792-8488</a></dd></div>
+              <div><dt><Mail size={15} aria-hidden="true" />Email</dt><dd><a href="mailto:info@homeoffer365.com">info@homeoffer365.com</a></dd></div>
+              <div><dt><MapPin size={15} aria-hidden="true" />Address</dt><dd><address>725 Walnut St Suite 5<br />Lebanon, PA 17042</address></dd></div>
             </dl>
-            <span className="footer-contact-note">Placeholder details for this preview.</span>
             <p>Have a question before or during a visit? Contact your assigned team member.</p>
             <Link href="/photographers/help">Find help & guidance<ArrowRight size={15} aria-hidden="true" /></Link>
           </section>
