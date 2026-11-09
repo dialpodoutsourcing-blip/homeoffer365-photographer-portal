@@ -639,7 +639,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .landing-value { display: flex; align-items: center; gap: 8px; margin-top: 25px; color: #587486; font-size: 12px; font-weight: 700; }
 .landing-value svg { color: var(--orange); }
 .landing-hero-image { min-height: 430px; position: relative; background: linear-gradient(0deg, #0b223688, transparent 60%), url('/images/photo-examples/equity-drive/1.jpg') center / cover; }
-.landing-demo-three .landing-hero-image { grid-column: 1; grid-row: 1; }
+.landing-demo-three .landing-hero-image { grid-column: 1; grid-row: 1; background-image: linear-gradient(0deg, #0b22366b, transparent 58%), url('/images/photo-examples/equity-drive/demo-3-hero-enhanced.png'); }
 .landing-demo-three .landing-hero-copy { grid-column: 2; grid-row: 1; }
 .landing-hero-note { position: absolute; right: 24px; bottom: 24px; left: 24px; display: flex; align-items: center; gap: 14px; padding: 18px; border: 1px solid #ffffff75; border-radius: 12px; color: white; background: #0b2236d9; backdrop-filter: blur(8px); }
 .landing-hero-note > svg { color: #72d1f5; }

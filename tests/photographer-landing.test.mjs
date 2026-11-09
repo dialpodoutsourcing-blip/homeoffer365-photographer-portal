@@ -13,6 +13,7 @@ const photoSliderPath = new URL("../components/photographer-guide/photo-slider.t
 const submissionFormPath = new URL("../components/photographer-guide/submission-form.tsx", import.meta.url);
 const guideContentPath = new URL("../content/photographer-guide.ts", import.meta.url);
 const walkthroughVideoPath = new URL("../public/videos/mt-vernon-walkthrough.mp4", import.meta.url);
+const demoThreeHeroPath = new URL("../public/images/photo-examples/equity-drive/demo-3-hero-enhanced.png", import.meta.url);
 
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
   const [landing, demoTwo, demoThree] = await Promise.all([
@@ -26,6 +27,16 @@ test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async
   assert.match(landing, /landing-demo-three/);
   assert.match(demoTwo, /<PhotographerLanding \/>/);
   assert.doesNotMatch(demoTwo, /variant="demo3"/);
+});
+
+test("demo 3 uses its own enhanced local hero image", async () => {
+  const [styles, heroImage] = await Promise.all([
+    readFile(stylesPath, "utf8"),
+    stat(demoThreeHeroPath),
+  ]);
+
+  assert.match(styles, /\.landing-demo-three \.landing-hero-image[^}]+demo-3-hero-enhanced\.png/s);
+  assert.ok(heroImage.size > 100_000);
 });
 
 test("photographers landing page presents every requested resource without a database flow", async () => {
