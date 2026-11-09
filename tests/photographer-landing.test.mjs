@@ -7,11 +7,26 @@ const demoOnePath = new URL("../app/page.tsx", import.meta.url);
 const productionPath = new URL("../app/photographers/page.tsx", import.meta.url);
 const demoOneAliasPath = new URL("../app/photographers/demo-1/page.tsx", import.meta.url);
 const demoTwoPath = new URL("../app/photographers/demo-2/page.tsx", import.meta.url);
+const demoThreePath = new URL("../app/photographers/demo-3/page.tsx", import.meta.url);
 const stylesPath = new URL("../app/globals.css", import.meta.url);
 const photoSliderPath = new URL("../components/photographer-guide/photo-slider.tsx", import.meta.url);
 const submissionFormPath = new URL("../components/photographer-guide/submission-form.tsx", import.meta.url);
 const guideContentPath = new URL("../content/photographer-guide.ts", import.meta.url);
 const walkthroughVideoPath = new URL("../public/videos/mt-vernon-walkthrough.mp4", import.meta.url);
+
+test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
+  const [landing, demoTwo, demoThree] = await Promise.all([
+    readFile(landingPath, "utf8"),
+    readFile(demoTwoPath, "utf8"),
+    readFile(demoThreePath, "utf8"),
+  ]);
+
+  assert.match(demoThree, /<PhotographerLanding variant="demo3" \/>/);
+  assert.match(landing, /Welcome to Home Offer 365/);
+  assert.match(landing, /landing-demo-three/);
+  assert.match(demoTwo, /<PhotographerLanding \/>/);
+  assert.doesNotMatch(demoTwo, /variant="demo3"/);
+});
 
 test("photographers landing page presents every requested resource without a database flow", async () => {
   const [landing, demoOne, production, demoOneAlias, demoTwo, styles] = await Promise.all([
@@ -60,7 +75,7 @@ test("photographers landing page has scoped responsive presentation hooks", asyn
     readFile(stylesPath, "utf8"),
   ]);
 
-  assert.match(landing, /className="photographer-landing"/);
+  assert.match(landing, /"photographer-landing"/);
   assert.match(landing, /id="photo-samples"/);
   assert.match(landing, /id="video-samples"/);
   assert.match(landing, /id="photo-checklist"/);
