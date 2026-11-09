@@ -15,16 +15,27 @@ const resources = [
 ] as const;
 const featuredTeam = [teamFounder, ...teamDepartments.flatMap((department) => department.members)].slice(0, 4);
 
-export function PhotographerLanding() {
-  return <div id="top" className="photographer-landing">
+type PhotographerLandingProps = {
+  variant?: "default" | "demo3";
+};
+
+export function PhotographerLanding({ variant = "default" }: PhotographerLandingProps = {}) {
+  const isDemoThree = variant === "demo3";
+  const landingClassName = isDemoThree ? "photographer-landing landing-demo-three" : "photographer-landing";
+  const heroTitle = isDemoThree ? "Welcome to Home Offer 365" : "Welcome, Photographers!";
+  const heroImageLabel = isDemoThree
+    ? "Enhanced front exterior view of a single-story Home Offer 365 property in bright daylight"
+    : "Front exterior of a single-story property photographed in bright daylight";
+
+  return <div id="top" className={landingClassName}>
     <header className="landing-site-header">
       <div className="landing-utility"><div><span>Selling to us?</span><a href="https://homeoffer365.com/portal"><UserRound size={14} aria-hidden="true" />Homeowner Portal</a><a href="https://homeoffer365.com/track">Track Your Sale</a></div></div>
       <div className="landing-site-main"><a className="landing-site-brand" href="https://homeoffer365.com/" aria-label="Home Offer 365 home page"><BrandLogo tone="dark" /></a><nav aria-label="Home Offer 365 navigation"><a href="https://homeoffer365.com/">Home</a><a href="#meet-team">Team</a><a href="https://homeoffer365.com/we-care">We Care</a><a href="https://homeoffer365.com/about">About Us</a><a href="https://homeoffer365.com/contact">Contact</a><a href="https://homeoffer365.com/cash-offer">Cash Offer</a></nav><div className="landing-header-actions"><a href="tel:+12407928488"><Phone size={15} aria-hidden="true" />(240) 792-8488</a><a className="landing-cash-cta" href="https://homeoffer365.com/">Get a Cash Offer <ArrowRight size={16} aria-hidden="true" /></a></div></div>
     </header>
     <a className="landing-submit-tab" href="#submit-photos"><span className="landing-submit-tab-icon"><Camera size={18} strokeWidth={2.2} aria-hidden="true" /></span><span className="landing-submit-tab-label">Submit Photos</span></a>
     <section className="landing-hero" aria-labelledby="landing-title">
-      <div className="landing-hero-copy"><span className="landing-kicker"><span aria-hidden="true" />HOME OFFER 365</span><h1 id="landing-title">Welcome, Photographers!</h1><p className="landing-lead">Everything you need for a clear, complete, and professional property visit—right here in one place.</p><div className="landing-hero-actions"><a className="button primary" href="#photo-samples">View the guide <ArrowRight size={17} aria-hidden="true" /></a><a className="landing-text-link" href="#submit-photos">Ready to submit? <ArrowRight size={15} aria-hidden="true" /></a></div><span className="landing-value"><Heart size={16} aria-hidden="true" />People Over Profit. Always.</span></div>
-      <div className="landing-hero-image" role="img" aria-label="Front exterior of a single-story property photographed in bright daylight"><div className="landing-hero-note"><Camera size={24} aria-hidden="true" /><div><strong>Your work helps tell the whole story.</strong><span>Clear photos. Steady video. Complete coverage.</span></div></div></div>
+      <div className="landing-hero-copy"><span className="landing-kicker"><span aria-hidden="true" />HOME OFFER 365</span><h1 id="landing-title">{heroTitle}</h1><p className="landing-lead">Everything you need for a clear, complete, and professional property visit—right here in one place.</p><div className="landing-hero-actions"><a className="button primary" href="#photo-samples">View the guide <ArrowRight size={17} aria-hidden="true" /></a><a className="landing-text-link" href="#submit-photos">Ready to submit? <ArrowRight size={15} aria-hidden="true" /></a></div><span className="landing-value"><Heart size={16} aria-hidden="true" />People Over Profit. Always.</span></div>
+      <div className="landing-hero-image" role="img" aria-label={heroImageLabel}><div className="landing-hero-note"><Camera size={24} aria-hidden="true" /><div><strong>Your work helps tell the whole story.</strong><span>Clear photos. Steady video. Complete coverage.</span></div></div></div>
     </section>
     <nav className="landing-resource-grid" aria-label="Photographer resources">{resources.map(({ href, label, detail, icon: Icon, ...resource }) => { const content = <><span className="landing-resource-icon"><Icon size={22} aria-hidden="true" /></span><span><strong>{label}</strong><small>{detail}</small></span><ArrowRight className="landing-resource-arrow" size={17} aria-hidden="true" /></>; return resource.external ? <a key={label} href={href} target="_blank" rel="noopener noreferrer">{content}<span className="sr-only"> (opens in a new tab)</span></a> : <a className={label === "Submit Photos" ? "landing-resource-submit" : undefined} key={label} href={href}>{content}</a>; })}</nav>
     <section id="photo-samples" className="landing-section" aria-labelledby="photo-samples-title"><div className="landing-section-heading"><span className="eyebrow">PHOTO SAMPLES</span><h2 id="photo-samples-title">Show the property clearly.</h2><p>Start wide, keep the camera level, and capture each space in context before moving in for details.</p></div><PhotoSlider /><a className="landing-inline-link" href="#photo-checklist">Continue to the complete checklist <ArrowRight size={15} aria-hidden="true" /></a></section>
