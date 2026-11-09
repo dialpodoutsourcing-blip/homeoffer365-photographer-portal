@@ -22,6 +22,7 @@ type PhotographerLandingProps = {
 export function PhotographerLanding({ variant = "default" }: PhotographerLandingProps = {}) {
   const isDemoThree = variant === "demo3";
   const landingClassName = isDemoThree ? "photographer-landing landing-demo-three" : "photographer-landing";
+  const heroClassName = isDemoThree ? "landing-hero landing-hero-background" : "landing-hero";
   const heroTitle = isDemoThree ? "Welcome to Home Offer 365" : "Welcome, Photographers!";
   const heroImageLabel = isDemoThree
     ? "Enhanced front exterior view of a single-story Home Offer 365 property in bright daylight"
@@ -33,7 +34,7 @@ export function PhotographerLanding({ variant = "default" }: PhotographerLanding
       <div className="landing-site-main"><a className="landing-site-brand" href="https://homeoffer365.com/" aria-label="Home Offer 365 home page"><BrandLogo tone="dark" /></a><nav aria-label="Home Offer 365 navigation"><a href="https://homeoffer365.com/">Home</a><a href="#meet-team">Team</a><a href="https://homeoffer365.com/we-care">We Care</a><a href="https://homeoffer365.com/about">About Us</a><a href="https://homeoffer365.com/contact">Contact</a><a href="https://homeoffer365.com/cash-offer">Cash Offer</a></nav><div className="landing-header-actions"><a href="tel:+12407928488"><Phone size={15} aria-hidden="true" />(240) 792-8488</a><a className="landing-cash-cta" href="https://homeoffer365.com/">Get a Cash Offer <ArrowRight size={16} aria-hidden="true" /></a></div></div>
     </header>
     <a className="landing-submit-tab" href="#submit-photos"><span className="landing-submit-tab-icon"><Camera size={18} strokeWidth={2.2} aria-hidden="true" /></span><span className="landing-submit-tab-label">Submit Photos</span></a>
-    <section className="landing-hero" aria-labelledby="landing-title">
+    <section className={heroClassName} aria-labelledby="landing-title">
       <div className="landing-hero-copy"><span className="landing-kicker"><span aria-hidden="true" />HOME OFFER 365</span><h1 id="landing-title">{heroTitle}</h1><p className="landing-lead">Everything you need for a clear, complete, and professional property visit—right here in one place.</p><div className="landing-hero-actions"><a className="button primary" href="#photo-samples">View the guide <ArrowRight size={17} aria-hidden="true" /></a><a className="landing-text-link" href="#submit-photos">Ready to submit? <ArrowRight size={15} aria-hidden="true" /></a></div><span className="landing-value"><Heart size={16} aria-hidden="true" />People Over Profit. Always.</span></div>
       <div className="landing-hero-image" role="img" aria-label={heroImageLabel}><div className="landing-hero-note"><Camera size={24} aria-hidden="true" /><div><strong>Your work helps tell the whole story.</strong><span>Clear photos. Steady video. Complete coverage.</span></div></div></div>
     </section>
