@@ -52,6 +52,16 @@ test("demo 3 uses a responsive background hero with left-aligned overlay content
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.landing-demo-three \.landing-hero-background[^}]+linear-gradient/s);
 });
 
+test("demo 3 places the team directly after four resource cards", async () => {
+  const landing = await readFile(landingPath, "utf8");
+  const resourceConfig = landing.match(/const resources = \[([\s\S]*?)\] as const;/)?.[1] ?? "";
+  const labels = [...resourceConfig.matchAll(/label: "([^"]+)"/g)].map((match) => match[1]);
+
+  assert.deepEqual(labels, ["Meet Our Team", "Google Reviews", "Photo and Video Samples", "Submit Photos"]);
+  assert.match(landing, /<\/nav>\s*\{isDemoThree && teamSection\}\s*<section id="photo-samples"/);
+  assert.match(landing, /\{!isDemoThree && teamSection\}/);
+});
+
 test("photographers landing page presents every requested resource without a database flow", async () => {
   const [landing, demoOne, production, demoOneAlias, demoTwo, styles] = await Promise.all([
     readFile(landingPath, "utf8"),
