@@ -35,8 +35,21 @@ test("demo 3 uses its own enhanced local hero image", async () => {
     stat(demoThreeHeroPath),
   ]);
 
-  assert.match(styles, /\.landing-demo-three \.landing-hero-image[^}]+demo-3-hero-enhanced\.png/s);
+  assert.match(styles, /\.landing-demo-three \.landing-hero[^}]+demo-3-hero-enhanced\.png/s);
   assert.ok(heroImage.size > 100_000);
+});
+
+test("demo 3 uses a responsive background hero with left-aligned overlay content", async () => {
+  const [landing, styles] = await Promise.all([
+    readFile(landingPath, "utf8"),
+    readFile(stylesPath, "utf8"),
+  ]);
+
+  assert.match(landing, /landing-hero-background/);
+  assert.match(styles, /\.landing-demo-three \.landing-hero-background[^}]+grid-template-columns: 1fr[^}]+demo-3-hero-enhanced\.png/s);
+  assert.match(styles, /\.landing-demo-three \.landing-hero-copy[^}]+z-index: 2[^}]+background: transparent/s);
+  assert.match(styles, /\.landing-demo-three \.landing-hero-background h1[^}]+color: white/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.landing-demo-three \.landing-hero-background[^}]+linear-gradient/s);
 });
 
 test("photographers landing page presents every requested resource without a database flow", async () => {
