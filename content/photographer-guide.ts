@@ -4,7 +4,7 @@ export const guideLinks = {
   team: "/photographers/team",
   stories: "/photographers/homeowner-stories",
   reviews: null as string | null,
-  walkthrough: "/videos/interior-sample.mp4",
+  walkthrough: "/videos/mt-vernon-walkthrough.mp4",
   upload: "/photographers/upload",
   support: null as string | null,
 };
@@ -12,7 +12,7 @@ export const guideLinks = {
 export const walkthroughSample = {
   src: guideLinks.walkthrough,
   poster: "/images/photo-examples/video-poster.jpg",
-  description: "A short camera move through a furnished dining and living area, showing how the spaces connect. Bright window glare appears toward the end. This illustrative clip is not a complete property inspection; your assignment still needs every accessible room and visible condition issue.",
+  description: "A complete property walkthrough example showing the pacing, camera movement, and room-to-room coverage expected for a Home Offer 365 visit.",
 };
 
 export const exteriorExamples = [

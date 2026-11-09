@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:standalone": "node scripts/build-photographers-standalone.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "node --test tests/*.test.mjs"

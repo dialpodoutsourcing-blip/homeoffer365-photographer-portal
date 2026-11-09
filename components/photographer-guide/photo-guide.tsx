@@ -45,7 +45,7 @@ export function PhotoGuide() {
           <source src={walkthroughSample.src} type="video/mp4" />
           Your browser does not support embedded video. <a href={walkthroughSample.src}>Open the sample video</a>.
         </video>
-        <p className="video-sample-label">ILLUSTRATIVE INTERIOR CLIP · 12 SECONDS</p>
+        <p className="video-sample-label">FULL PROPERTY WALKTHROUGH SAMPLE</p>
         <p id="video-description">{walkthroughSample.description}</p>
         <a className="resource-link" href={walkthroughSample.src} target="_blank" rel="noopener noreferrer">Open video in a new tab<span className="sr-only"> (MP4)</span></a>
       </section>
