@@ -54,9 +54,9 @@ export function PhotoExample({ title, src, alt, note, examples }: PhotoExamplePr
           </header>
           {isGallery && (
             <div className="example-gallery-controls">
-              <button type="button" onClick={() => setSelectedIndex((index) => (index - 1 + images.length) % images.length)} aria-label="Previous exterior example"><ChevronLeft size={18} aria-hidden="true" /></button>
+              <button type="button" onClick={() => setSelectedIndex((index) => (index - 1 + images.length) % images.length)} aria-label={`Previous ${title} example`}><ChevronLeft size={18} aria-hidden="true" /></button>
               <p role="status" aria-live="polite">{selectedIndex + 1} / {images.length} · {selected.label}</p>
-              <button type="button" onClick={() => setSelectedIndex((index) => (index + 1) % images.length)} aria-label="Next exterior example"><ChevronRight size={18} aria-hidden="true" /></button>
+              <button type="button" onClick={() => setSelectedIndex((index) => (index + 1) % images.length)} aria-label={`Next ${title} example`}><ChevronRight size={18} aria-hidden="true" /></button>
             </div>
           )}
           </div>
@@ -66,7 +66,7 @@ export function PhotoExample({ title, src, alt, note, examples }: PhotoExamplePr
             <figcaption id={descriptionId}>{selected.note}</figcaption>
           </figure>
           {isGallery && (
-            <div className="example-thumbnails" role="group" aria-label="Choose exterior view">
+            <div className="example-thumbnails" role="group" aria-label={`Choose ${title} view`}>
               {images.map((image, index) => (
                 <button type="button" key={image.src} aria-pressed={selectedIndex === index} onClick={() => setSelectedIndex(index)}>
                   <Image src={image.src} alt="" width={150} height={112} sizes="130px" loading="lazy" />

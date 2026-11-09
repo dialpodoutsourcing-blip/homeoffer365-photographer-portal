@@ -1,9 +1,10 @@
 ﻿import Image from "next/image";
 import { Camera, Check, ChevronDown, ShieldCheck, Video } from "lucide-react";
-import { exteriorExamples, photoCategories, walkthroughSample } from "@/content/photographer-guide";
+import { conditionExamples, exteriorExamples, interiorExamples, mechanicalExamples, photoCategories, walkthroughSample } from "@/content/photographer-guide";
 import { PhotoExample } from "./photo-example";
 
 export function PhotoGuide() {
+  const exampleGalleries = { exterior: exteriorExamples, interior: interiorExamples, mechanical: mechanicalExamples, condition: conditionExamples };
   return (
     <section id="photo-guide" className="panel photo-guide">
       <div className="section-heading">
@@ -21,7 +22,7 @@ export function PhotoGuide() {
             <div className="photo-card-copy">
               <h3>{category.title}</h3>
               <ul className="highlights">{category.highlights.map((item) => <li key={item}><Check size={15} aria-hidden="true" />{item}</li>)}</ul>
-              <PhotoExample title={category.title} src={category.image} alt={category.alt} note={category.exampleNote} examples={category.id === "exterior" ? exteriorExamples : undefined} />
+              <PhotoExample title={category.title} src={category.image} alt={category.alt} note={category.exampleNote} examples={exampleGalleries[category.id]} />
               <details>
                 <summary>View shot list <ChevronDown size={15} aria-hidden="true" /></summary>
                 <div className="shot-details">
