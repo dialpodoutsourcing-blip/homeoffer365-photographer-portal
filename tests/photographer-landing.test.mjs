@@ -58,8 +58,30 @@ test("demo 3 places the team directly after four resource cards", async () => {
   const labels = [...resourceConfig.matchAll(/label: "([^"]+)"/g)].map((match) => match[1]);
 
   assert.deepEqual(labels, ["Meet Our Team", "Google Reviews", "Photo and Video Samples", "Submit Photos"]);
-  assert.match(landing, /<\/nav>\s*\{isDemoThree && teamSection\}\s*<section id="photo-samples"/);
+  assert.match(landing, /<\/nav>\s*\{isDemoThree && teamSection\}/);
   assert.match(landing, /\{!isDemoThree && teamSection\}/);
+});
+
+test("demo 3 places homeowner reviews directly after the team", async () => {
+  const landing = await readFile(landingPath, "utf8");
+
+  assert.match(landing, /\{isDemoThree && teamSection\}\s*\{isDemoThree && reviewsSection\}\s*<section id="photo-samples"/);
+  assert.match(landing, /\{!isDemoThree && teamSection\}\s*\{!isDemoThree && reviewsSection\}\s*<SubmissionForm/);
+});
+
+test("photo checklist uses compact collapsible rows", async () => {
+  const [landing, styles] = await Promise.all([
+    readFile(landingPath, "utf8"),
+    readFile(stylesPath, "utf8"),
+  ]);
+  const checklist = landing.match(/<section id="photo-checklist"[\s\S]*?<\/section>/)?.[0] ?? "";
+
+  assert.match(checklist, /Open a category for a quick reminder before you leave\./);
+  assert.match(checklist, /<details className="landing-checklist"[^>]*open=\{index === 0\}>/);
+  assert.match(checklist, /<summary><strong>\{group\.title\}<\/strong><\/summary>/);
+  assert.doesNotMatch(checklist, /String\(index \+ 1\)|group\.items\.length|<small>/);
+  assert.match(styles, /\.landing-checklist-grid \{[^}]*grid-template-columns: 1fr/);
+  assert.match(styles, /\.landing-checklist summary \{[^}]*grid-template-columns: 1fr auto/);
 });
 
 test("photographers landing page presents every requested resource without a database flow", async () => {
@@ -145,6 +167,9 @@ test("photographers landing page has scoped responsive presentation hooks", asyn
   assert.match(styles, /\.landing-team-card::before[^}]*background: #f47a2a/);
   assert.match(styles, /\.landing-team-card:hover[^}]*translateY\(-5px\)/);
   assert.match(styles, /\.landing-team-card img[^}]*width: 88px/);
+  assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.landing-hero h1 \{[^}]*overflow-wrap: anywhere/);
+  assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.landing-demo-three \.landing-hero-background h1 \{[^}]*font-size: clamp\(38px, 11vw, 46px\)/);
+  assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.landing-cash-cta \{[^}]*padding-inline: 10px[^}]*font-size: 11px/);
 });
 
 test("photo samples use a keyboard-accessible slider with every supplied Drive photo", async () => {

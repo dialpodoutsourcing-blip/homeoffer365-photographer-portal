@@ -722,15 +722,13 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .landing-video-frame video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #061521; }
 .landing-video-frame > span { display: block; padding: 11px 15px; color: #9fb7c5; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
 .landing-checklist-section { background: #fafdff; }
-.landing-checklist-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 28px; }
+.landing-checklist-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 22px; }
 .landing-checklist { align-self: start; overflow: hidden; border: 1px solid #d8e6ee; border-radius: 11px; background: white; }
-.landing-checklist summary { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 17px 18px; list-style: none; }
+.landing-checklist summary { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 14px 16px; list-style: none; }
 .landing-checklist summary::-webkit-details-marker { display: none; }
-.landing-checklist summary::after { content: '+'; grid-column: 4; color: var(--blue); font-size: 20px; line-height: 1; }
+.landing-checklist summary::after { content: '+'; grid-column: 2; color: var(--blue); font-size: 20px; line-height: 1; }
 .landing-checklist[open] summary::after { content: '−'; }
-.landing-checklist summary > span { color: var(--blue); font-size: 10px; font-weight: 800; letter-spacing: .1em; }
-.landing-checklist summary small { color: #7b8f9c; font-size: 10px; }
-.landing-checklist ul { display: grid; gap: 10px; margin: 0; padding: 2px 22px 20px 48px; color: #526c7d; font-size: 12px; }
+.landing-checklist ul { display: grid; gap: 8px; margin: 0; padding: 0 42px 16px 32px; color: #526c7d; font-size: 12px; }
 .landing-checklist li::marker { color: var(--orange); }
 .landing-team { display: grid; grid-template-columns: .75fr 1.25fr; gap: 38px; align-items: center; padding: clamp(30px, 4vw, 48px); border: 1px solid #dce8ef; border-radius: 16px; background: white; }
 .landing-team-copy p { max-width: 480px; }
@@ -805,4 +803,11 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
   .landing-demo-three .landing-hero-copy { width: 100%; padding: 38px 26px 128px; }
   .landing-demo-three .landing-hero-background h1 { max-width: 420px; font-size: clamp(42px, 13vw, 58px); }
   .landing-demo-three .landing-hero-note { right: 18px; bottom: 18px; left: 18px; width: auto; }
+}
+@media (max-width: 430px) {
+  .landing-site-main { gap: 10px; }
+  .landing-cash-cta { gap: 6px; padding-inline: 10px; font-size: 11px; }
+  .landing-hero h1 { overflow-wrap: anywhere; font-size: 34px; }
+  .landing-demo-three .landing-hero-background h1 { font-size: clamp(38px, 11vw, 46px); }
+  .landing-demo-three .landing-hero-copy { padding-inline: 22px; }
 }
