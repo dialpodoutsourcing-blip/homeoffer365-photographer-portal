@@ -50,13 +50,13 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   const header = demoFourLanding.match(/<header className="demo-four-header">[\s\S]*?<\/header>/)?.[0] ?? "";
   assert.match(header, /demo-four-house-logo/);
   assert.doesNotMatch(header, /<nav|Meet the Team|Easy Exit/);
-  assert.match(styles, /demo-4-photographer-hero\.webp/);
+  assert.match(demoFourLanding, /demo-4-photographer-hero\.webp/);
+  assert.match(demoFourLanding, /className="demo-four-hero-image"[\s\S]*?preload[\s\S]*?placeholder="blur"/);
   assert.match(demoFourLanding, /<\/section>\s*<section className="demo-four-team-strip"[\s\S]*?<h2>Meet the team behind every visit\.<\/h2>[\s\S]*?<a[^>]+>Meet the Team/);
   assert.match(demoFourLanding, /Review(?:s)? from our vendors/i);
   assert.match(demoFourLanding, /View photos and video samples/i);
   assert.match(demoFourSamples, /Exterior Photos/);
   assert.match(demoFourSamples, /360 Street View/);
-  assert.match(demoFourSamples, /Exterior Video Tour/);
   assert.match(demoFourSamples, /Interior Video Tour/);
   assert.match(demoFourSamples, /Living Room/);
   assert.match(demoFourSamples, /Kitchen/);
@@ -65,6 +65,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourLanding, /Photographer(?:&apos;|')s Info/);
   assert.match(demoFourLanding, /<DemoFourSamples \/>/);
   assert.match(demoFourLanding, /<SubmissionForm showChecklist=\{false\} \/>/);
+  assert.match(demoFourLanding, /className="demo-four-floating-submit"[\s\S]*?<Camera/);
   assert.match(form, /showChecklist = true/);
   assert.doesNotMatch(demoFourLanding, /id="photo-checklist"/);
   assert.match(demoFourSamples, /map_action=pano&viewpoint=-?\d+\.\d+%2C-?\d+\.\d+/);
@@ -78,10 +79,13 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /Videos/);
   assert.match(demoFourSamples, /Interior/);
   assert.match(demoFourSamples, /Mechanicals/);
+  assert.doesNotMatch(demoFourSamples, /mt-vernon-walkthrough\.mp4|Exterior Video Tour/);
+  assert.match(demoFourSamples, /Interior Video Tour/);
   assert.match(styles, /\.photographer-demo-four/);
   assert.match(styles, /\.demo-four-review-avatar[^}]+background-size: 500% auto[^}]+background-position-y: center/);
+  assert.match(styles, /\.demo-four-floating-submit[^}]+position: fixed[^}]+right: 18px[^}]+bottom: 18px/);
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.demo-four-samples/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.demo-four-hero[^}]+background-position: 88% center/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.demo-four-hero-image[^}]+object-position: 88% center/);
   assert.doesNotMatch(styles, /\.demo-four-header nav a:first-child\s*\{\s*display:\s*none/);
   assert.match(styles, /\.demo-four-video\s*\{[^}]*display:\s*grid/);
   assert.match(styles, /\.demo-four-video\s*>\s*span\s*\{[^}]*position:\s*static/);

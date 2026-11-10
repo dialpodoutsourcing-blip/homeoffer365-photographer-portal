@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { ArrowRight, ExternalLink, House, Star, Users } from "lucide-react";
+import { ArrowRight, Camera, ExternalLink, House, Star, Users } from "lucide-react";
+import demoFourHero from "@/public/images/photo-examples/demo-4-photographer-hero.webp";
 import { DemoFourSamples } from "./demo-four-samples";
 import { SubmissionForm } from "./submission-form";
 
@@ -48,6 +49,7 @@ export function PhotographerDemoFour() {
       </header>
 
       <section className="demo-four-hero" aria-labelledby="demo-four-title">
+        <Image className="demo-four-hero-image" src={demoFourHero} alt="" fill preload placeholder="blur" sizes="(max-width: 760px) 100vw, 1400px" />
         <div>
           <span className="eyebrow"><House size={15} aria-hidden="true" /> PHOTOGRAPHER PORTAL</span>
           <h1 id="demo-four-title">Welcome to Home Offer 365</h1>
@@ -91,6 +93,7 @@ export function PhotographerDemoFour() {
         <div className="demo-four-form-heading"><span className="eyebrow">SUBMIT PHOTOS/VIDEOS</span><h2 id="demo-four-form-title">Photographer&apos;s Info</h2></div>
         <SubmissionForm showChecklist={false} />
       </section>
+      <a className="demo-four-floating-submit" href="#submit-photos" aria-label="Submit photos and videos"><Camera size={20} strokeWidth={2.2} aria-hidden="true" /></a>
     </div>
   );
 }
