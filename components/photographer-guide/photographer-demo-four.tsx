@@ -51,7 +51,7 @@ export function PhotographerDemoFour() {
           <p>Everything you need to capture the property and send your files—kept simple.</p>
         </div>
       </section>
-      <a className="demo-four-team-strip" href="https://homeoffer365.com/team" target="_blank" rel="noopener noreferrer" aria-label="Meet the Home Offer 365 team">
+      <a className="demo-four-team-strip" href="https://homeoffer365.com/team" target="_blank" rel="noopener noreferrer">
         <span className="demo-four-team-icon"><Users size={18} aria-hidden="true" /></span>
         <span>Meet the team behind every visit.</span>
         <ExternalLink size={14} aria-hidden="true" />
@@ -59,7 +59,7 @@ export function PhotographerDemoFour() {
 
       <section className="demo-four-reviews" aria-labelledby="demo-four-reviews-title">
         <div className="demo-four-section-title">
-          <div><span className="eyebrow">VERIFIED VENDOR FEEDBACK</span><h2 id="demo-four-reviews-title">Reviews from our vendors.</h2></div>
+          <div><span className="eyebrow">VENDOR FEEDBACK</span><h2 id="demo-four-reviews-title">Reviews from our vendors.</h2></div>
         </div>
         <div className="demo-four-review-strip">
           {reviews.map((review) => (

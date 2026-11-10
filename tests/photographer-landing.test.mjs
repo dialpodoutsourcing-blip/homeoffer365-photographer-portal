@@ -56,10 +56,12 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourLanding, /<a className="demo-four-team-strip"[^>]+>[\s\S]*?<span>Meet the team behind every visit\.<\/span>[\s\S]*?<ExternalLink/);
   assert.doesNotMatch(demoFourLanding, /Real people, ready to help|>Meet the Team </);
   assert.match(demoFourLanding, /Review(?:s)? from our vendors/i);
-  assert.match(demoFourLanding, /VERIFIED VENDOR FEEDBACK/);
+  assert.match(demoFourLanding, /VENDOR FEEDBACK/);
   assert.doesNotMatch(demoFourLanding, /5\.0 GOOGLE RATING|View Google Reviews|googleReviewsUrl/);
   assert.match(demoFourLanding, /View photos and video samples/i);
   assert.match(demoFourSamples, /galleryGroups/);
+  assert.match(demoFourSamples, /Exterior:\s*\[[\s\S]*?equity-drive\/1\.jpg[\s\S]*?equity-drive\/16\.jpg[\s\S]*?equity-drive\/20\.jpg[\s\S]*?equity-drive\/21\.jpg[\s\S]*?\]/);
+  assert.match(demoFourSamples, /Mechanicals:\s*\[[\s\S]*?equity-drive\/14\.jpg[\s\S]*?equity-drive\/19\.jpg[\s\S]*?\]/);
   assert.match(demoFourSamples, /demo-four-gallery-main/);
   assert.match(demoFourSamples, /demo-four-gallery-thumbnails/);
   assert.match(demoFourSamples, /aria-pressed=\{selectedIndex === index\}/);

@@ -11,9 +11,9 @@ type GalleryTab = Extract<SampleTab, "Exterior" | "Interior" | "Mechanicals">;
 const galleryGroups: Record<GalleryTab, readonly { label: string; src: string }[]> = {
   Exterior: [
     { label: "Front exterior", src: "/images/photo-examples/equity-drive/1.jpg" },
-    { label: "Exterior angle", src: "/images/photo-examples/equity-drive/3.jpg" },
-    { label: "Rear exterior", src: "/images/photo-examples/equity-drive/4.jpg" },
-    { label: "Side and yard", src: "/images/photo-examples/equity-drive/5.jpg" },
+    { label: "Front and side angle", src: "/images/photo-examples/equity-drive/16.jpg" },
+    { label: "Rear and side angle", src: "/images/photo-examples/equity-drive/20.jpg" },
+    { label: "Rear elevation", src: "/images/photo-examples/equity-drive/21.jpg" },
   ],
   Interior: [
     { label: "Living Room", src: "/images/photo-examples/equity-drive/2.jpg" },
@@ -22,10 +22,8 @@ const galleryGroups: Record<GalleryTab, readonly { label: string; src: string }[
     { label: "Bathroom", src: "/images/photo-examples/equity-drive/13.jpg" },
   ],
   Mechanicals: [
-    { label: "Mechanical system", src: "/images/photo-examples/equity-drive/14.jpg" },
-    { label: "Utility equipment", src: "/images/photo-examples/equity-drive/16.jpg" },
-    { label: "Electrical detail", src: "/images/photo-examples/equity-drive/17.jpg" },
-    { label: "System detail", src: "/images/photo-examples/equity-drive/19.jpg" },
+    { label: "Water heater", src: "/images/photo-examples/equity-drive/14.jpg" },
+    { label: "Exterior HVAC unit", src: "/images/photo-examples/equity-drive/19.jpg" },
   ],
 };
 
