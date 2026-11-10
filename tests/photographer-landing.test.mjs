@@ -57,7 +57,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourLanding, /View photos and video samples/i);
   assert.match(demoFourSamples, /Exterior Photos/);
   assert.match(demoFourSamples, /360 Street View/);
-  assert.match(demoFourSamples, /Interior Video Tour/);
+  assert.match(demoFourSamples, /Full Property Video Tour/);
   assert.match(demoFourSamples, /Living Room/);
   assert.match(demoFourSamples, /Kitchen/);
   assert.match(demoFourSamples, /Bathroom/);
@@ -79,8 +79,8 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /Videos/);
   assert.match(demoFourSamples, /Interior/);
   assert.match(demoFourSamples, /Mechanicals/);
-  assert.doesNotMatch(demoFourSamples, /mt-vernon-walkthrough\.mp4|Exterior Video Tour/);
-  assert.match(demoFourSamples, /Interior Video Tour/);
+  assert.match(demoFourSamples, /mt-vernon-walkthrough\.mp4/);
+  assert.doesNotMatch(demoFourSamples, /interior-sample\.mp4|Interior Video Tour/);
   assert.match(styles, /\.photographer-demo-four/);
   assert.match(styles, /\.demo-four-review-avatar[^}]+background-size: 500% auto[^}]+background-position-y: center/);
   assert.match(styles, /\.demo-four-floating-submit[^}]+position: fixed[^}]+right: 18px[^}]+bottom: 18px/);

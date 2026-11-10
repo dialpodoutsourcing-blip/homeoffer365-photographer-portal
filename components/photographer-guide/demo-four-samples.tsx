@@ -36,7 +36,7 @@ export function DemoFourSamples() {
     </div>
     <div id="demo-four-sample-panel" className="demo-four-sample-panel" role="tabpanel" aria-label={`${activeTab} samples`}>
       {activeTab === "Videos" ? <>
-        <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/equity-drive/2.jpg"><source src="/videos/interior-sample.mp4" type="video/mp4" /></video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Interior Video Tour</strong><small>Steady room-to-room path</small></span></article>
+        <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/equity-drive/20.jpg"><source src="/videos/mt-vernon-walkthrough.mp4" type="video/mp4" /></video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Full Property Video Tour</strong><small>Complete property walkthrough</small></span></article>
       </> : photoGroups[activeTab].map((sample) => {
         const content = <><Image src={sample.src} alt={`${sample.label} example`} width={680} height={360} /><span><strong>{sample.label}</strong><small>{sample.detail}</small></span>{sample.href && <ExternalLink size={15} aria-hidden="true" />}</>;
         return sample.href ? <a className="demo-four-sample" href={sample.href} target="_blank" rel="noopener noreferrer" key={sample.label}>{content}</a> : <article className="demo-four-sample" key={sample.label}>{content}</article>;
