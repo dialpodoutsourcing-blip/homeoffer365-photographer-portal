@@ -50,6 +50,8 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourLanding, /Welcome to Home Offer 365/);
   assert.doesNotMatch(demoFourLanding, /demo-four-header/);
   assert.match(demoFourLanding, /<section className="demo-four-hero"[\s\S]*?className="demo-four-house-logo"/);
+  assert.match(demoFourLanding, /demo-four-house-logo[\s\S]*?guide-mark\.svg/);
+  assert.match(styles, /\.demo-four-house-logo\s*\{[^}]+width:\s*36px[^}]+height:\s*36px/);
   assert.doesNotMatch(demoFourLanding, /Submit Photos\/Videos <ArrowRight/);
   assert.match(demoFourLanding, /demo-4-photographer-hero\.webp/);
   assert.match(demoFourLanding, /className="demo-four-hero-image"[\s\S]*?preload[\s\S]*?placeholder="blur"/);
