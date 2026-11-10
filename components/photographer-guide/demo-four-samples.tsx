@@ -10,20 +10,24 @@ type GalleryTab = Extract<SampleTab, "Exterior" | "Interior" | "Mechanicals">;
 
 const galleryGroups: Record<GalleryTab, readonly { label: string; src: string }[]> = {
   Exterior: [
-    { label: "Front exterior", src: "/images/photo-examples/equity-drive/1.jpg" },
-    { label: "Front and side angle", src: "/images/photo-examples/equity-drive/16.jpg" },
-    { label: "Rear and side angle", src: "/images/photo-examples/equity-drive/20.jpg" },
-    { label: "Rear elevation", src: "/images/photo-examples/equity-drive/21.jpg" },
+    { label: "Front exterior", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front.png" },
+    { label: "Front and driveway", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front-driveway.png" },
+    { label: "Side yard", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-side-yard.png" },
+    { label: "Front and side angle", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-rear-side.png" },
+    { label: "Rear elevation", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-rear.png" },
   ],
   Interior: [
-    { label: "Living Room", src: "/images/photo-examples/equity-drive/2.jpg" },
-    { label: "Kitchen", src: "/images/photo-examples/equity-drive/6.jpg" },
-    { label: "Interior room", src: "/images/photo-examples/equity-drive/7.jpg" },
-    { label: "Bathroom", src: "/images/photo-examples/equity-drive/13.jpg" },
+    { label: "Living Room", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-living-room.png" },
+    { label: "Kitchen", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-kitchen.png" },
+    { label: "Bedroom", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bedroom.png" },
+    { label: "Bathroom", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bathroom.png" },
+    { label: "Laundry Room", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-laundry.png" },
   ],
   Mechanicals: [
-    { label: "Water heater", src: "/images/photo-examples/equity-drive/14.jpg" },
-    { label: "Exterior HVAC unit", src: "/images/photo-examples/equity-drive/19.jpg" },
+    { label: "Furnace and ductwork", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-furnace-ductwork.png" },
+    { label: "Exterior electrical meter", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electric-meter-close.jpg" },
+    { label: "Electrical service context", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electrical-service-context.png" },
+    { label: "Under-sink plumbing", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-under-sink-plumbing.png" },
   ],
 };
 
@@ -59,8 +63,8 @@ export function DemoFourSamples() {
           {gallery.map((photo, index) => <button type="button" aria-label={`Show ${photo.label}`} aria-pressed={selectedIndex === index} onClick={() => setSelectedIndex(index)} key={photo.src}><Image src={photo.src} alt="" width={150} height={96} sizes="90px" /></button>)}
         </div>
       </div>}
-      {activeTab === "Street View" && <div className="demo-four-street-view"><iframe title="Interactive 360 Street View" src="https://maps.google.com/maps?q=40.3409,-76.4113&layer=c&cbll=40.3409,-76.4113&cbp=11,0,0,0,0&output=svembed" loading="lazy" allowFullScreen referrerPolicy="no-referrer-when-downgrade" /></div>}
-      {activeTab === "Video Tours" && <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/equity-drive/20.jpg"><source src="/videos/demo-4-property-tour.mp4" type="video/mp4" /></video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Full Property Video Tour</strong><small>Complete property walkthrough</small></span></article>}
+      {activeTab === "Street View" && <article className="demo-four-sample demo-four-video demo-four-street-view"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/pennsylvania-brick-bungalow/exterior-front.png" aria-label="360-style exterior street view video"><source src="/videos/ai-pennsylvania-street-360.mp4" type="video/mp4" />Your browser does not support embedded video.</video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> 360° Exterior Street View</strong><small>Front, sides, and rear property context</small></span></article>}
+      {activeTab === "Video Tours" && <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/pennsylvania-brick-bungalow/exterior-front-driveway.png" aria-label="Full exterior and interior property tour video"><source src="/videos/ai-pennsylvania-property-tour.mp4" type="video/mp4" />Your browser does not support embedded video.</video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Full Property Video Tour</strong><small>Exterior, interior, and mechanical walkthrough</small></span></article>}
     </div>
   </div>;
 }

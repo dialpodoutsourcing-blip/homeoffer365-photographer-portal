@@ -4,107 +4,131 @@ export const guideLinks = {
   team: "/photographers/team",
   stories: "/photographers/homeowner-stories",
   reviews: null as string | null,
-  walkthrough: "/videos/mt-vernon-walkthrough.mp4",
+  walkthrough: "/videos/ai-pennsylvania-property-tour.mp4",
   upload: "/photographers/upload",
   support: null as string | null,
 };
 
 export const walkthroughSample = {
   src: guideLinks.walkthrough,
-  poster: "/images/photo-examples/video-poster.jpg",
+  poster: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front.png",
   description: "A complete property walkthrough example showing the pacing, camera movement, and room-to-room coverage expected for a Home Offer 365 visit.",
 };
 
 export const exteriorExamples = [
   {
-    src: "/images/photo-examples/equity-drive/1.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front.png",
     label: "Front elevation",
     alt: "Front elevation of a single-story home showing the entrance, windows, roofline, and front yard",
     note: "Start with a centered view showing the full front elevation, entrance, roofline, and surrounding yard.",
   },
   {
-    src: "/images/photo-examples/equity-drive/17.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-side-yard.png",
     label: "Side elevation",
     alt: "Side elevation of the home showing exterior walls, windows, foundation edge, and yard",
     note: "Capture each side separately and keep the complete elevation visible, including the roofline, foundation edge, and access area.",
   },
   {
-    src: "/images/photo-examples/equity-drive/20.jpg",
-    label: "Rear angle",
-    alt: "Wide rear angle showing the back of the home, roofline, windows, and surrounding lot",
-    note: "Use a wide rear view to show the entire structure and how it sits on the lot. Add separate closer photos for visible issues.",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-rear-side.png",
+    label: "Front and side angle",
+    alt: "Wide front and side angle showing the brick bungalow entrance, windows, roofline, utilities, and surrounding lawn",
+    note: "Use a wide front and side view to show the entrance, complete side elevation, utilities, foundation, and how the home sits on the lot.",
   },
   {
-    src: "/images/photo-examples/equity-drive/21.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-rear.png",
     label: "Rear / property edge",
     alt: "Rear elevation and property edge showing exterior walls, windows, fence, trees, and yard",
     note: "Include the rear elevation, yard boundaries, fencing, and nearby features so the property condition is visible in context.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front-driveway.png",
+    label: "Front / driveway angle",
+    alt: "Angled front view of a small brick bungalow showing its driveway, entry, landscaping, and detached shed",
+    note: "Include an angled front view that shows access, parking, landscaping, and any outbuildings in relation to the home.",
   },
 ] as const;
 
 export const interiorExamples = [
   {
-    src: "/images/photo-examples/equity-drive/2.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-living-room.png",
     label: "Living room",
     alt: "Wide living-room view showing seating, windows, flooring, and connected doorways",
     note: "Stand in a corner and show the complete room, including windows, flooring, ceiling, and how it connects to adjacent spaces.",
   },
   {
-    src: "/images/photo-examples/equity-drive/6.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-kitchen.png",
     label: "Kitchen",
     alt: "Wide kitchen view showing cabinets, counters, sink, appliances, window, and doorway",
     note: "Capture the full kitchen layout and all visible cabinets, counters, appliances, plumbing fixtures, and access points.",
   },
   {
-    src: "/images/photo-examples/equity-drive/10.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bedroom.png",
     label: "Bedroom",
-    alt: "Bedroom view showing the bed, walls, window, closet doors, flooring, and ceiling fan",
+    alt: "Furnished bedroom showing the bed, walls, window, carpet, dresser, and ceiling light",
     note: "Use a wide corner view that shows every wall, the window, closet, flooring, ceiling, and overall room condition.",
   },
   {
-    src: "/images/photo-examples/equity-drive/13.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bathroom.png",
     label: "Bathroom",
     alt: "Bathroom view showing the vanity, toilet, shower edge, mirror, window, and flooring",
     note: "Show the full bathroom and follow with detail photos of fixtures, plumbing, cabinets, and visible moisture or damage.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-laundry.png",
+    label: "Laundry room",
+    alt: "Laundry room showing washer, dryer, storage cabinets, window, floor, and exterior door",
+    note: "Include laundry appliances, utility connections, storage, flooring, windows, and exterior access in a clear wide view.",
   },
 ] as const;
 
 export const mechanicalExamples = [
   {
-    src: "/images/photo-examples/equity-drive/19.jpg",
-    label: "Exterior HVAC",
-    alt: "Exterior HVAC equipment beside the home with the surrounding wall and yard visible",
-    note: "Take a context photo showing where the exterior equipment is located, followed by closer views and a readable equipment label.",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-furnace-ductwork.png",
+    label: "Furnace and ductwork",
+    alt: "Basement furnace with supply and return ductwork, gas piping, venting, and condensate line visible",
+    note: "Show the furnace in context with its ductwork, venting, fuel connection, condensate routing, and surrounding access.",
   },
   {
-    src: "/images/photo-examples/equity-drive/14.jpg",
-    label: "Water heater",
-    alt: "Water heater installed in a utility area beside kitchen cabinetry",
-    note: "Capture the water heater in context, then photograph its connections, venting, visible condition, and data label clearly.",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electric-meter-close.jpg",
+    label: "Exterior electrical meter",
+    alt: "Close exterior view of the electrical meter, service conduit, disconnect, and wall penetrations",
+    note: "Photograph the exterior service equipment and its connections without opening covers or touching the installation.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electrical-service-context.png",
+    label: "Electrical service context",
+    alt: "Wide side view of a brick bungalow showing the electrical meter location and surrounding wall",
+    note: "Add a wider view so reviewers can see where the electrical service is located on the home.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-under-sink-plumbing.png",
+    label: "Under-sink plumbing",
+    alt: "Open kitchen sink cabinet showing supply lines, shutoff valves, drains, trap, and cabinet floor",
+    note: "Open accessible sink cabinets and clearly show supply lines, shutoffs, drain piping, and visible cabinet condition.",
   },
 ] as const;
 
 export const conditionExamples = [
   {
-    src: "/images/photo-examples/equity-drive/18.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front-driveway.png",
     label: "Overall exterior",
     alt: "Wide property view showing the home, front yard, walkway, trees, and surrounding site",
     note: "Begin with a wide property view that shows the structure, site, access, and overall exterior condition in context.",
   },
   {
-    src: "/images/photo-examples/equity-drive/11.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bedroom.png",
     label: "Interior surfaces",
-    alt: "Empty bedroom showing walls, windows, flooring, baseboards, ceiling, and electrical outlets",
+    alt: "Furnished bedroom showing walls, window, carpet, baseboards, furniture, and ceiling light",
     note: "Use clear room views to document walls, ceilings, flooring, trim, windows, and any visible damage or unfinished work.",
   },
   {
-    src: "/images/photo-examples/equity-drive/13.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bathroom.png",
     label: "Bathroom condition",
     alt: "Bathroom showing fixtures, walls, window, vanity, mirror, and flooring",
     note: "Document fixture and surface condition, then add close-ups of visible staining, leaks, damage, or needed repairs.",
   },
   {
-    src: "/images/photo-examples/equity-drive/20.jpg",
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-rear.png",
     label: "Rear site condition",
     alt: "Rear property view showing the home, yard, trees, grading, and nearby structures",
     note: "Show the rear structure and site together so grading, vegetation, access, and visible exterior condition can be reviewed.",
@@ -114,7 +138,7 @@ export const conditionExamples = [
 export const photoCategories = [
   {
     id: "exterior", title: "Exterior Photos", number: "01", icon: "house",
-    image: "/images/photo-examples/equity-drive/1.jpg",
+    image: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front.png",
     alt: "Front elevation of a single-story home showing the entrance, windows, roofline, and front yard",
     highlights: ["Front, rear & both sides", "Yard, driveway & outbuildings"],
     shots: ["Front of house", "Rear of house", "Both sides", "Roof and gutters", "Driveway, yard, and outbuildings", "Visible exterior damage"],
@@ -123,7 +147,7 @@ export const photoCategories = [
   },
   {
     id: "interior", title: "Interior Photos", number: "02", icon: "sofa",
-    image: "/images/photo-examples/equity-drive/2.jpg",
+    image: "/images/photo-examples/pennsylvania-brick-bungalow/interior-living-room.png",
     alt: "Wide living-room view showing seating, windows, flooring, and connected doorways",
     highlights: ["Every accessible room", "Layout, condition & key details"],
     shots: ["Living room", "Kitchen and appliances", "All bedrooms", "All bathrooms", "Basement and attic where accessible", "Floors, ceilings, and walls", "Visible damage or needed repairs"],
@@ -131,14 +155,14 @@ export const photoCategories = [
     exampleNote: "Show how rooms connect, then photograph each room individually. Include floors, ceilings, walls, appliances, and visible repairs.",
   },
   {
-    id: "mechanical", title: "Mechanical Systems", number: "03", icon: "settings", image: "/images/photo-examples/equity-drive/14.jpg", alt: "Water heater installed in a utility area beside kitchen cabinetry",
-    highlights: ["HVAC, water heater & panel", "Equipment labels & condition"],
-    shots: ["HVAC equipment", "Furnace and air conditioning", "Water heater", "Electrical panel where safely accessible", "Visible plumbing", "Equipment labels and visible condition"],
+    id: "mechanical", title: "Mechanical Systems", number: "03", icon: "settings", image: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-furnace-ductwork.png", alt: "Basement furnace with ductwork, piping, venting, and condensate line visible",
+    highlights: ["HVAC, electrical & plumbing", "Equipment context & condition"],
+    shots: ["HVAC equipment", "Furnace and air conditioning", "Water heater", "Electrical panel and meter where safely accessible", "Visible plumbing and shutoffs", "Equipment labels and visible condition"],
     tip: "Include readable labels when accessible. Do not open electrical equipment or remove covers to obtain a photo.",
     exampleNote: "Capture an overview of each system and separate readable label photos where safely accessible. Do not open electrical equipment or remove covers.",
   },
   {
-    id: "condition", title: "Property Condition", number: "04", icon: "scan", image: "/images/photo-examples/equity-drive/18.jpg", alt: "Wide property view showing the home, front yard, walkway, trees, and surrounding site",
+    id: "condition", title: "Property Condition", number: "04", icon: "scan", image: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front-driveway.png", alt: "Wide property view showing a brick bungalow, driveway, front yard, landscaping, trees, and detached shed",
     highlights: ["Overall property condition", "Damage, moisture & repairs"],
     shots: ["Water damage", "Foundation cracks", "Roof leaks", "Mold-like staining", "Fire damage", "Structural concerns", "Unfinished renovations"],
     tip: "Show the issue in context, then capture a closer view. Describe what is visible rather than diagnosing its cause.",

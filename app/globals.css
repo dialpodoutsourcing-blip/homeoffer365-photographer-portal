@@ -57,7 +57,7 @@ h1 { font-size: clamp(34px, 3.2vw, 52px); line-height: 1.08; letter-spacing: -.0
 .hero .button { margin-top: 23px; }
 .hero-value { display: flex; align-items: center; gap: 7px; color: #4c6f81; font-size: 10px; margin-top: 18px; }
 .hero-value svg { color: var(--orange); }
-.hero-visual { position: relative; min-height: 350px; background: linear-gradient(0deg, #0b223675, transparent 55%), url('/images/photo-examples/equity-drive/1.jpg') center / cover, #b6d3dc; }
+.hero-visual { position: relative; min-height: 350px; background: linear-gradient(0deg, #0b223675, transparent 55%), url('/images/photo-examples/pennsylvania-brick-bungalow/exterior-front.png') center / cover, #b6d3dc; }
 .hero-caption { position: absolute; bottom: 22px; left: 20px; right: 20px; background: #fffef5f5; border-radius: 8px; padding: 16px; display: flex; gap: 12px; align-items: center; box-shadow: 0 8px 25px #00142618; }
 .caption-icon { display: grid; place-items: center; width: 43px; height: 43px; background: #e6f4fa; color: var(--blue); border-radius: 7px; flex-shrink: 0; }
 .hero-caption strong { display: block; font-size: 13px; letter-spacing: -.01em; }
@@ -333,7 +333,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .demo-four-gallery-thumbnails button[aria-pressed="true"] { border-color: #078fc9; box-shadow: 0 0 0 2px #bce8f7; }
 .demo-four-gallery-thumbnails img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .demo-four-street-view { overflow: hidden; border: 1px solid #d8e7ef; border-radius: 14px; background: #eaf2f6; }
-.demo-four-street-view iframe { width: 100%; height: clamp(320px, 48vw, 560px); display: block; border: 0; }
+.demo-four-street-view video { width: 100%; height: 100%; display: block; object-fit: cover; border: 0; }
 .demo-four-sample { position: relative; min-height: 128px; display: block; overflow: hidden; border-radius: 12px; color: white; background: #0b2b42; }
 .demo-four-sample > img, .demo-four-sample > video { width: 100%; height: 128px; display: block; object-fit: cover; opacity: .7; }
 .demo-four-sample::after { content: ""; position: absolute; inset: 35% 0 0; background: linear-gradient(transparent, #071d31e8); pointer-events: none; }

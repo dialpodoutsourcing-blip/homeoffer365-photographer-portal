@@ -15,11 +15,12 @@ const stylesPath = new URL("../app/globals.css", import.meta.url);
 const photoSliderPath = new URL("../components/photographer-guide/photo-slider.tsx", import.meta.url);
 const submissionFormPath = new URL("../components/photographer-guide/submission-form.tsx", import.meta.url);
 const guideContentPath = new URL("../content/photographer-guide.ts", import.meta.url);
-const walkthroughVideoPath = new URL("../public/videos/mt-vernon-walkthrough.mp4", import.meta.url);
+const walkthroughVideoPath = new URL("../public/videos/ai-pennsylvania-property-tour.mp4", import.meta.url);
 const demoThreeHeroPath = new URL("../public/images/photo-examples/equity-drive/demo-3-hero-enhanced.png", import.meta.url);
 const demoFourHeroPath = new URL("../public/images/photo-examples/demo-4-photographer-hero.webp", import.meta.url);
 const demoFourAvatarsPath = new URL("../public/images/review-avatars/demo-4-review-portraits.webp", import.meta.url);
-const demoFourVideoPath = new URL("../public/videos/demo-4-property-tour.mp4", import.meta.url);
+const demoFourVideoPath = new URL("../public/videos/ai-pennsylvania-property-tour.mp4", import.meta.url);
+const streetViewVideoPath = new URL("../public/videos/ai-pennsylvania-street-360.mp4", import.meta.url);
 
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
   const [landing, demoTwo, demoThree] = await Promise.all([
@@ -64,12 +65,12 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(demoFourLanding, /5\.0 GOOGLE RATING|View Google Reviews|googleReviewsUrl/);
   assert.match(demoFourLanding, /View photos and video samples/i);
   assert.match(demoFourSamples, /galleryGroups/);
-  assert.match(demoFourSamples, /Exterior:\s*\[[\s\S]*?equity-drive\/1\.jpg[\s\S]*?equity-drive\/16\.jpg[\s\S]*?equity-drive\/20\.jpg[\s\S]*?equity-drive\/21\.jpg[\s\S]*?\]/);
-  assert.match(demoFourSamples, /Mechanicals:\s*\[[\s\S]*?equity-drive\/14\.jpg[\s\S]*?equity-drive\/19\.jpg[\s\S]*?\]/);
+  assert.match(demoFourSamples, /Exterior:\s*\[[\s\S]*?exterior-front\.png[\s\S]*?exterior-front-driveway\.png[\s\S]*?exterior-side-yard\.png[\s\S]*?exterior-rear-side\.png[\s\S]*?exterior-rear\.png[\s\S]*?\]/);
+  assert.equal((demoFourSamples.match(/mechanical-[a-z-]+\.(?:png|jpg)/g) ?? []).length, 4);
   assert.match(demoFourSamples, /demo-four-gallery-main/);
   assert.match(demoFourSamples, /demo-four-gallery-thumbnails/);
   assert.match(demoFourSamples, /aria-pressed=\{selectedIndex === index\}/);
-  assert.match(demoFourSamples, /className="demo-four-street-view"><iframe/);
+  assert.match(demoFourSamples, /className="demo-four-sample demo-four-video demo-four-street-view"><video/);
   assert.match(demoFourSamples, /Full Property Video Tour/);
   assert.match(demoFourSamples, /Living Room/);
   assert.match(demoFourSamples, /Kitchen/);
@@ -93,7 +94,8 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(demoFourSamples, /"Videos"/);
   assert.match(demoFourSamples, /Interior/);
   assert.match(demoFourSamples, /Mechanicals/);
-  assert.match(demoFourSamples, /demo-4-property-tour\.mp4/);
+  assert.match(demoFourSamples, /ai-pennsylvania-property-tour\.mp4/);
+  assert.match(demoFourSamples, /ai-pennsylvania-street-360\.mp4/);
   assert.doesNotMatch(demoFourSamples, /interior-sample\.mp4|Interior Video Tour/);
   assert.match(styles, /\.photographer-demo-four/);
   assert.match(styles, /\.demo-four-review-avatar[^}]+background-size: 500% auto[^}]+background-position-y: center/);
@@ -108,16 +110,18 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.deepEqual([...demoFourLanding.matchAll(/name: "([^"]+)"/g)].map((match) => match[1]), ["Michael Davis", "Emily Carter", "Daniel Wilson", "Jessica Miller", "Sarah Thompson"]);
 });
 
-test("demo 4 uses lightweight hero and review imagery", async () => {
-  const [heroImage, avatarImage, video] = await Promise.all([
+test("demo 4 uses lightweight hero, review, and generated property media", async () => {
+  const [heroImage, avatarImage, video, streetVideo] = await Promise.all([
     stat(demoFourHeroPath),
     stat(demoFourAvatarsPath),
     stat(demoFourVideoPath),
+    stat(streetViewVideoPath),
   ]);
 
   assert.ok(heroImage.size < 250_000, `hero image is ${heroImage.size} bytes`);
   assert.ok(avatarImage.size < 100_000, `avatar sprite is ${avatarImage.size} bytes`);
   assert.ok(video.size > 1_000_000 && video.size < 40_000_000, `video is ${video.size} bytes`);
+  assert.ok(streetVideo.size > 500_000 && streetVideo.size < 40_000_000, `street video is ${streetVideo.size} bytes`);
 });
 
 test("demo 3 uses its own enhanced local hero image", async () => {
@@ -263,7 +267,7 @@ test("photographers landing page has scoped responsive presentation hooks", asyn
   assert.match(styles, /@media \(max-width: 430px\)[\s\S]*?\.landing-cash-cta \{[^}]*padding-inline: 10px[^}]*font-size: 11px/);
 });
 
-test("photo samples use a keyboard-accessible slider with every supplied Drive photo", async () => {
+test("photo samples use a keyboard-accessible slider with every supplied property photo", async () => {
   const [landing, slider, styles] = await Promise.all([
     readFile(landingPath, "utf8"),
     readFile(photoSliderPath, "utf8"),
@@ -284,18 +288,19 @@ test("photo samples use a keyboard-accessible slider with every supplied Drive p
   assert.match(slider, /event\.key === "ArrowRight"/);
   assert.match(styles, /\.photo-lightbox \{/);
   assert.match(styles, /\.landing-submit-tab-icon/);
-  const drivePhotos = [...slider.matchAll(/equity-drive\/(\d+)\.jpg/g)].map((match) => Number(match[1]));
-  assert.deepEqual(drivePhotos, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22]);
+  const propertyPhotos = [...slider.matchAll(/pennsylvania-brick-bungalow\/([a-z-]+)\.(?:png|jpg)/g)].map((match) => match[1]);
+  assert.equal(propertyPhotos.length, 14);
+  assert.equal(new Set(propertyPhotos).size, 14);
 });
 
-test("video samples use the supplied Mt. Vernon walkthrough", async () => {
+test("video samples use the generated Pennsylvania exterior and interior walkthrough", async () => {
   const [guide, video] = await Promise.all([
     readFile(guideContentPath, "utf8"),
     stat(walkthroughVideoPath),
   ]);
 
-  assert.match(guide, /walkthrough: "\/videos\/mt-vernon-walkthrough\.mp4"/);
-  assert.ok(video.size > 80_000_000);
+  assert.match(guide, /walkthrough: "\/videos\/ai-pennsylvania-property-tour\.mp4"/);
+  assert.ok(video.size > 1_000_000);
 });
 
 test("landing submission is a database-free form with an honest confirmation state", async () => {
