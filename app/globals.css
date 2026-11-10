@@ -368,6 +368,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
   .demo-four-hero h1 { font-size: clamp(38px, 12vw, 52px); }
   .demo-four-reviews, .demo-four-samples, .demo-four-form { padding: 19px; border-radius: 14px; }
   .demo-four-section-title { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .demo-four-reviews .demo-four-section-title h2, .demo-four-samples .demo-four-section-title h2 { font-size: clamp(13px, 4vw, 18px); line-height: 1.15; letter-spacing: -.045em; white-space: nowrap; }
   .demo-four-section-title > p { text-align: left; }
   .demo-four-review-strip { display: flex; overflow-x: auto; padding-bottom: 5px; scroll-snap-type: x mandatory; }
   .demo-four-review { min-width: min(78vw, 260px); scroll-snap-align: start; }
