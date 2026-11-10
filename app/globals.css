@@ -292,7 +292,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 
 /* Photographer landing demo 4: intentionally short, simple, and route-scoped. */
 .photographer-demo-four { --demo-four-ink: #0b2b42; --demo-four-blue: #0798d2; width: min(1280px, calc(100% - 36px)); margin: 0 auto; padding: 18px 0 34px; color: var(--demo-four-ink); }
-.demo-four-house-logo { position: absolute; z-index: 2; top: 20px; right: 24px; width: 44px; height: 44px; display: block; overflow: hidden; border-radius: 50%; filter: drop-shadow(0 3px 8px #041a2d66); }
+.demo-four-house-logo { position: absolute; z-index: 2; top: 20px; right: 24px; width: 44px; height: 44px; display: block; overflow: hidden; background: #fff; border-radius: 50%; filter: drop-shadow(0 3px 8px #041a2d66); }
 .demo-four-house-logo img { width: auto; max-width: none; height: 44px; display: block; }
 .demo-four-hero { position: relative; min-height: 245px; display: flex; align-items: center; gap: 48px; margin-top: 0; padding: clamp(34px, 5vw, 62px); overflow: hidden; border-radius: 22px; color: white; background: #173c55; box-shadow: 0 18px 50px #0b2b421c; }
 .demo-four-hero::after { content: ""; position: absolute; z-index: 0; inset: 0; background: linear-gradient(90deg, #061d31eb 0%, #092b46c7 47%, #0b2b4226 100%); pointer-events: none; }

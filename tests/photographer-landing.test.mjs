@@ -51,7 +51,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(demoFourLanding, /demo-four-header/);
   assert.match(demoFourLanding, /<section className="demo-four-hero"[\s\S]*?className="demo-four-house-logo"/);
   assert.match(demoFourLanding, /demo-four-house-logo[\s\S]*?home-offer-365-logo\.png/);
-  assert.match(styles, /\.demo-four-house-logo\s*\{[^}]+width:\s*44px[^}]+height:\s*44px[^}]+overflow:\s*hidden/);
+  assert.match(styles, /\.demo-four-house-logo\s*\{[^}]+width:\s*44px[^}]+height:\s*44px[^}]+overflow:\s*hidden[^}]+background:\s*#fff/);
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.demo-four-house-logo\s*\{[^}]+top:\s*18px[^}]+right:\s*20px/);
   assert.doesNotMatch(demoFourLanding, /Submit Photos\/Videos <ArrowRight/);
   assert.match(demoFourLanding, /demo-4-photographer-hero\.webp/);
