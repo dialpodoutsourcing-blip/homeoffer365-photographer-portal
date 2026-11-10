@@ -43,7 +43,7 @@ export function PhotographerDemoFour() {
       <section className="demo-four-hero" aria-labelledby="demo-four-title">
         <Image className="demo-four-hero-image" src={demoFourHero} alt="" fill preload placeholder="blur" sizes="(max-width: 760px) 100vw, 1400px" />
         <a className="demo-four-house-logo" href="https://homeoffer365.com/" aria-label="Home Offer 365 home page">
-          <Image src="/images/brand/guide-mark.svg" alt="" width={64} height={64} />
+          <Image src="/images/brand/home-offer-365-logo.png" alt="" width={768} height={296} />
         </a>
         <div>
           <span className="eyebrow"><House size={15} aria-hidden="true" /> PHOTOGRAPHER PORTAL</span>
