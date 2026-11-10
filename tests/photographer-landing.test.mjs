@@ -51,14 +51,14 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(demoFourLanding, /demo-four-header/);
   assert.match(demoFourLanding, /<section className="demo-four-hero"[\s\S]*?className="demo-four-house-logo"/);
   assert.match(demoFourLanding, /demo-four-house-logo[\s\S]*?guide-mark\.svg/);
-  assert.match(styles, /\.demo-four-house-logo\s*\{[^}]+width:\s*36px[^}]+height:\s*36px/);
+  assert.match(styles, /\.demo-four-house-logo\s*\{[^}]+width:\s*44px[^}]+height:\s*44px[^}]+border-radius:\s*50%[^}]+background:\s*#fff/);
   assert.doesNotMatch(demoFourLanding, /Submit Photos\/Videos <ArrowRight/);
   assert.match(demoFourLanding, /demo-4-photographer-hero\.webp/);
   assert.match(demoFourLanding, /className="demo-four-hero-image"[\s\S]*?preload[\s\S]*?placeholder="blur"/);
   assert.match(demoFourLanding, /<a className="demo-four-team-strip"[^>]+>[\s\S]*?<span>Meet the team behind every visit\.<\/span>[\s\S]*?<ExternalLink/);
   assert.doesNotMatch(demoFourLanding, /Real people, ready to help|>Meet the Team </);
-  assert.match(demoFourLanding, /Review(?:s)? from our vendors/i);
   assert.match(demoFourLanding, /VENDOR FEEDBACK/);
+  assert.match(demoFourLanding, /Trusted by the vendors who work with us\./);
   assert.doesNotMatch(demoFourLanding, /5\.0 GOOGLE RATING|View Google Reviews|googleReviewsUrl/);
   assert.match(demoFourLanding, /View photos and video samples/i);
   assert.match(demoFourSamples, /galleryGroups/);

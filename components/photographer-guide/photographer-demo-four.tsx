@@ -59,7 +59,7 @@ export function PhotographerDemoFour() {
 
       <section className="demo-four-reviews" aria-labelledby="demo-four-reviews-title">
         <div className="demo-four-section-title">
-          <div><span className="eyebrow">VENDOR FEEDBACK</span><h2 id="demo-four-reviews-title">Reviews from our vendors.</h2></div>
+          <div><span className="eyebrow">VENDOR FEEDBACK</span><h2 id="demo-four-reviews-title">Trusted by the vendors who work with us.</h2></div>
         </div>
         <div className="demo-four-review-strip">
           {reviews.map((review) => (
