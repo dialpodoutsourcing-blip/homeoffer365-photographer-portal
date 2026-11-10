@@ -19,6 +19,7 @@ const walkthroughVideoPath = new URL("../public/videos/mt-vernon-walkthrough.mp4
 const demoThreeHeroPath = new URL("../public/images/photo-examples/equity-drive/demo-3-hero-enhanced.png", import.meta.url);
 const demoFourHeroPath = new URL("../public/images/photo-examples/demo-4-photographer-hero.webp", import.meta.url);
 const demoFourAvatarsPath = new URL("../public/images/review-avatars/demo-4-review-portraits.webp", import.meta.url);
+const demoFourVideoPath = new URL("../public/videos/demo-4-property-tour.mp4", import.meta.url);
 
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
   const [landing, demoTwo, demoThree] = await Promise.all([
@@ -79,7 +80,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /Videos/);
   assert.match(demoFourSamples, /Interior/);
   assert.match(demoFourSamples, /Mechanicals/);
-  assert.match(demoFourSamples, /mt-vernon-walkthrough\.mp4/);
+  assert.match(demoFourSamples, /demo-4-property-tour\.mp4/);
   assert.doesNotMatch(demoFourSamples, /interior-sample\.mp4|Interior Video Tour/);
   assert.match(styles, /\.photographer-demo-four/);
   assert.match(styles, /\.demo-four-review-avatar[^}]+background-size: 500% auto[^}]+background-position-y: center/);
@@ -92,13 +93,15 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
 });
 
 test("demo 4 uses lightweight hero and review imagery", async () => {
-  const [heroImage, avatarImage] = await Promise.all([
+  const [heroImage, avatarImage, video] = await Promise.all([
     stat(demoFourHeroPath),
     stat(demoFourAvatarsPath),
+    stat(demoFourVideoPath),
   ]);
 
   assert.ok(heroImage.size < 250_000, `hero image is ${heroImage.size} bytes`);
   assert.ok(avatarImage.size < 100_000, `avatar sprite is ${avatarImage.size} bytes`);
+  assert.ok(video.size > 1_000_000 && video.size < 40_000_000, `video is ${video.size} bytes`);
 });
 
 test("demo 3 uses its own enhanced local hero image", async () => {
