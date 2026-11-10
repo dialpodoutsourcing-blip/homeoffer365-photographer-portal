@@ -106,6 +106,48 @@ export const mechanicalExamples = [
     alt: "Open kitchen sink cabinet showing supply lines, shutoff valves, drains, trap, and cabinet floor",
     note: "Open accessible sink cabinets and clearly show supply lines, shutoffs, drain piping, and visible cabinet condition.",
   },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-basement-overview.png",
+    label: "Basement utility overview",
+    alt: "Wide basement utility view showing the furnace, water heater, ductwork, plumbing, support columns, storage, and access stairs",
+    note: "Start with a wide utility-area view so each system's location, access, and relationship to the basement are clear.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-furnace-modern.png",
+    label: "Modern furnace",
+    alt: "Basement gas furnace showing its cabinet, supply and return ductwork, venting, gas piping, and condensate line",
+    note: "Capture the full furnace installation, including ductwork, venting, fuel connection, condensate routing, and accessible data labels.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-water-heater.png",
+    label: "Water heater",
+    alt: "Basement tank water heater showing venting, gas connection, copper supply lines, shutoffs, and adjacent ductwork",
+    note: "Show the water heater from top to bottom with venting, fuel connection, supply piping, shutoffs, drain, and visible labels.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-water-softener.png",
+    label: "Water softener",
+    alt: "Basement water softener system showing mineral and brine tanks, filter housing, bypass valves, and supply piping",
+    note: "Photograph treatment equipment in context, including tanks, filters, bypass valves, supply lines, and visible controls.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-well-pump.png",
+    label: "Well pump system",
+    alt: "Basement well system showing pressure tank, pump, pressure gauge, controls, filter, shutoffs, and connected piping",
+    note: "Include the complete well-water system with pressure tank, pump, controls, gauge, filtration, shutoffs, and piping.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-ac-condenser.png",
+    label: "Exterior AC condenser",
+    alt: "Exterior air-conditioning condenser on a concrete pad beside the brick home with refrigerant lines and disconnect visible",
+    note: "Show the outdoor condenser in context with its pad, wall clearance, refrigerant lines, electrical disconnect, and surrounding grade.",
+  },
+  {
+    src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-breaker-panel.png",
+    label: "Breaker panel",
+    alt: "Open basement electrical breaker panel showing breakers, branch circuits, service conduit, panel schedule, and surrounding wall",
+    note: "Photograph electrical panels only when already safely accessible; never remove covers or touch breakers, wiring, or equipment.",
+  },
 ] as const;
 
 export const conditionExamples = [

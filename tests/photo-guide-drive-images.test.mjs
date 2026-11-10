@@ -29,12 +29,19 @@ test("photo guide cards and galleries use the coherent Pennsylvania property set
     }
   }
 
-  assert.equal(mechanicalExamples.length, 4);
+  assert.equal(mechanicalExamples.length, 11);
   assert.deepEqual(mechanicalExamples.map(({ label }) => label), [
     "Furnace and ductwork",
     "Exterior electrical meter",
     "Electrical service context",
     "Under-sink plumbing",
+    "Basement utility overview",
+    "Modern furnace",
+    "Water heater",
+    "Water softener",
+    "Well pump system",
+    "Exterior AC condenser",
+    "Breaker panel",
   ]);
   assert.equal(exteriorExamples[2].label, "Front and side angle");
   assert.doesNotMatch(`${interiorExamples[2].alt} ${conditionExamples[1].alt}`, /empty|ceiling fan|closet doors/i);

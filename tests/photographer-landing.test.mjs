@@ -66,7 +66,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourLanding, /View photos and video samples/i);
   assert.match(demoFourSamples, /galleryGroups/);
   assert.match(demoFourSamples, /Exterior:\s*\[[\s\S]*?exterior-front\.png[\s\S]*?exterior-front-driveway\.png[\s\S]*?exterior-side-yard\.png[\s\S]*?exterior-rear-side\.png[\s\S]*?exterior-rear\.png[\s\S]*?\]/);
-  assert.equal((demoFourSamples.match(/mechanical-[a-z-]+\.(?:png|jpg)/g) ?? []).length, 4);
+  assert.equal((demoFourSamples.match(/mechanical-[a-z-]+\.(?:png|jpg)/g) ?? []).length, 11);
   assert.match(demoFourSamples, /demo-four-gallery-main/);
   assert.match(demoFourSamples, /demo-four-gallery-thumbnails/);
   assert.match(demoFourSamples, /aria-pressed=\{selectedIndex === index\}/);
@@ -289,8 +289,8 @@ test("photo samples use a keyboard-accessible slider with every supplied propert
   assert.match(styles, /\.photo-lightbox \{/);
   assert.match(styles, /\.landing-submit-tab-icon/);
   const propertyPhotos = [...slider.matchAll(/pennsylvania-brick-bungalow\/([a-z-]+)\.(?:png|jpg)/g)].map((match) => match[1]);
-  assert.equal(propertyPhotos.length, 14);
-  assert.equal(new Set(propertyPhotos).size, 14);
+  assert.equal(propertyPhotos.length, 21);
+  assert.equal(new Set(propertyPhotos).size, 21);
 });
 
 test("video samples use the generated Pennsylvania exterior and interior walkthrough", async () => {

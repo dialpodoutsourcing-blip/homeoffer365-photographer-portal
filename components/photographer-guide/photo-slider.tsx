@@ -19,6 +19,13 @@ const photos = [
   { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electric-meter-close.jpg", label: "Exterior electrical meter", category: "Mechanical" },
   { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electrical-service-context.png", label: "Electrical service context", category: "Mechanical" },
   { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-under-sink-plumbing.png", label: "Under-sink plumbing", category: "Mechanical" },
+  { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-basement-overview.png", label: "Basement utility overview", category: "Mechanical" },
+  { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-furnace-modern.png", label: "Modern furnace", category: "Mechanical" },
+  { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-water-heater.png", label: "Water heater", category: "Mechanical" },
+  { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-water-softener.png", label: "Water softener", category: "Mechanical" },
+  { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-well-pump.png", label: "Well pump system", category: "Mechanical" },
+  { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-ac-condenser.png", label: "Exterior AC condenser", category: "Mechanical" },
+  { src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-breaker-panel.png", label: "Breaker panel", category: "Mechanical" },
 ] as const;
 
 export function PhotoSlider() {

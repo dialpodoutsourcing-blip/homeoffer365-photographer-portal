@@ -28,6 +28,13 @@ const galleryGroups: Record<GalleryTab, readonly { label: string; src: string }[
     { label: "Exterior electrical meter", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electric-meter-close.jpg" },
     { label: "Electrical service context", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electrical-service-context.png" },
     { label: "Under-sink plumbing", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-under-sink-plumbing.png" },
+    { label: "Basement utility overview", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-basement-overview.png" },
+    { label: "Modern furnace", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-furnace-modern.png" },
+    { label: "Water heater", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-water-heater.png" },
+    { label: "Water softener", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-water-softener.png" },
+    { label: "Well pump system", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-well-pump.png" },
+    { label: "Exterior AC condenser", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-ac-condenser.png" },
+    { label: "Breaker panel", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-breaker-panel.png" },
   ],
 };
 
