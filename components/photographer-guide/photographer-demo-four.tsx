@@ -70,7 +70,7 @@ export function PhotographerDemoFour() {
           {reviews.map((review) => (
             <article className="demo-four-review" key={review.name}>
               <div className="demo-four-review-person">
-                <span className="demo-four-review-avatar" role="img" aria-label={`${review.name} avatar`} style={{ backgroundImage: "url('/images/review-avatars/demo-4-review-portraits.png')", backgroundPosition: review.avatarPosition }} />
+                <span className="demo-four-review-avatar" role="img" aria-label={`${review.name} avatar`} style={{ backgroundImage: "url('/images/review-avatars/demo-4-review-portraits.webp')", backgroundPosition: review.avatarPosition }} />
                 <div><strong>{review.name}</strong><span aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: review.rating }, (_, index) => <Star key={index} size={12} fill="currentColor" aria-hidden="true" />)}</span></div>
               </div>
               <p>“{review.quote}”</p>

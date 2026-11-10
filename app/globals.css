@@ -295,7 +295,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .demo-four-header { min-height: 66px; display: flex; align-items: center; }
 .demo-four-house-logo { width: 58px; height: 58px; display: block; overflow: hidden; border-radius: 50%; }
 .demo-four-house-logo img { width: auto; max-width: none; height: 58px; }
-.demo-four-hero { min-height: 245px; display: flex; align-items: center; justify-content: space-between; gap: 48px; margin-top: 10px; padding: clamp(34px, 5vw, 62px); overflow: hidden; border-radius: 22px; color: white; background: linear-gradient(90deg, #061d31eb 0%, #092b46c7 47%, #0b2b4226 100%), url('/images/photo-examples/demo-4-photographer-hero.png') center / cover; box-shadow: 0 18px 50px #0b2b421c; }
+.demo-four-hero { min-height: 245px; display: flex; align-items: center; justify-content: space-between; gap: 48px; margin-top: 10px; padding: clamp(34px, 5vw, 62px); overflow: hidden; border-radius: 22px; color: white; background: linear-gradient(90deg, #061d31eb 0%, #092b46c7 47%, #0b2b4226 100%), url('/images/photo-examples/demo-4-photographer-hero.webp') center / cover; box-shadow: 0 18px 50px #0b2b421c; }
 .demo-four-hero > div { max-width: 720px; }
 .demo-four-hero .eyebrow { display: flex; align-items: center; gap: 6px; color: #87dbf8; }
 .demo-four-hero h1 { max-width: 650px; margin: 9px 0 10px; color: white; font-size: clamp(38px, 4.4vw, 64px); line-height: .98; letter-spacing: -.045em; }

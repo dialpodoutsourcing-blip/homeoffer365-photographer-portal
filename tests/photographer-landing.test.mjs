@@ -17,6 +17,8 @@ const submissionFormPath = new URL("../components/photographer-guide/submission-
 const guideContentPath = new URL("../content/photographer-guide.ts", import.meta.url);
 const walkthroughVideoPath = new URL("../public/videos/mt-vernon-walkthrough.mp4", import.meta.url);
 const demoThreeHeroPath = new URL("../public/images/photo-examples/equity-drive/demo-3-hero-enhanced.png", import.meta.url);
+const demoFourHeroPath = new URL("../public/images/photo-examples/demo-4-photographer-hero.webp", import.meta.url);
+const demoFourAvatarsPath = new URL("../public/images/review-avatars/demo-4-review-portraits.webp", import.meta.url);
 
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
   const [landing, demoTwo, demoThree] = await Promise.all([
@@ -48,7 +50,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   const header = demoFourLanding.match(/<header className="demo-four-header">[\s\S]*?<\/header>/)?.[0] ?? "";
   assert.match(header, /demo-four-house-logo/);
   assert.doesNotMatch(header, /<nav|Meet the Team|Easy Exit/);
-  assert.match(styles, /demo-4-photographer-hero\.png/);
+  assert.match(styles, /demo-4-photographer-hero\.webp/);
   assert.match(demoFourLanding, /<\/section>\s*<section className="demo-four-team-strip"[\s\S]*?<h2>Meet the team behind every visit\.<\/h2>[\s\S]*?<a[^>]+>Meet the Team/);
   assert.match(demoFourLanding, /Review(?:s)? from our vendors/i);
   assert.match(demoFourLanding, /View photos and video samples/i);
@@ -66,7 +68,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(form, /showChecklist = true/);
   assert.doesNotMatch(demoFourLanding, /id="photo-checklist"/);
   assert.match(demoFourSamples, /map_action=pano&viewpoint=-?\d+\.\d+%2C-?\d+\.\d+/);
-  assert.match(demoFourLanding, /demo-4-review-portraits\.png/);
+  assert.match(demoFourLanding, /demo-4-review-portraits\.webp/);
   assert.deepEqual([...demoFourLanding.matchAll(/avatarPosition: "([^"]+)"/g)].map((match) => match[1]), ["0%", "25%", "50%", "75%", "100%"]);
   assert.equal([...demoFourLanding.matchAll(/rating: 5/g)].length, 5);
   assert.match(demoFourSamples, /"use client"/);
@@ -83,6 +85,16 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(styles, /\.demo-four-header nav a:first-child\s*\{\s*display:\s*none/);
   assert.match(styles, /\.demo-four-video\s*\{[^}]*display:\s*grid/);
   assert.match(styles, /\.demo-four-video\s*>\s*span\s*\{[^}]*position:\s*static/);
+});
+
+test("demo 4 uses lightweight hero and review imagery", async () => {
+  const [heroImage, avatarImage] = await Promise.all([
+    stat(demoFourHeroPath),
+    stat(demoFourAvatarsPath),
+  ]);
+
+  assert.ok(heroImage.size < 250_000, `hero image is ${heroImage.size} bytes`);
+  assert.ok(avatarImage.size < 100_000, `avatar sprite is ${avatarImage.size} bytes`);
 });
 
 test("demo 3 uses its own enhanced local hero image", async () => {
