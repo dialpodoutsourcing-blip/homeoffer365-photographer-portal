@@ -8,6 +8,9 @@ const productionPath = new URL("../app/photographers/page.tsx", import.meta.url)
 const demoOneAliasPath = new URL("../app/photographers/demo-1/page.tsx", import.meta.url);
 const demoTwoPath = new URL("../app/photographers/demo-2/page.tsx", import.meta.url);
 const demoThreePath = new URL("../app/photographers/demo-3/page.tsx", import.meta.url);
+const demoFourPath = new URL("../app/photographers/demo-4/page.tsx", import.meta.url);
+const demoFourLandingPath = new URL("../components/photographer-guide/photographer-demo-four.tsx", import.meta.url);
+const demoFourSamplesPath = new URL("../components/photographer-guide/demo-four-samples.tsx", import.meta.url);
 const stylesPath = new URL("../app/globals.css", import.meta.url);
 const photoSliderPath = new URL("../components/photographer-guide/photo-slider.tsx", import.meta.url);
 const submissionFormPath = new URL("../components/photographer-guide/submission-form.tsx", import.meta.url);
@@ -27,6 +30,59 @@ test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async
   assert.match(landing, /landing-demo-three/);
   assert.match(demoTwo, /<PhotographerLanding \/>/);
   assert.doesNotMatch(demoTwo, /variant="demo3"/);
+});
+
+test("demo 4 is a separate compact page with reviews, requested samples, and submission", async () => {
+  const [demoThree, demoFour, demoFourLanding, demoFourSamples, form, styles] = await Promise.all([
+    readFile(demoThreePath, "utf8"),
+    readFile(demoFourPath, "utf8"),
+    readFile(demoFourLandingPath, "utf8"),
+    readFile(demoFourSamplesPath, "utf8"),
+    readFile(submissionFormPath, "utf8"),
+    readFile(stylesPath, "utf8"),
+  ]);
+
+  assert.match(demoFour, /<PhotographerDemoFour \/>/);
+  assert.doesNotMatch(demoThree, /PhotographerDemoFour|demo-4/);
+  assert.match(demoFourLanding, /Welcome to Home Offer 365/);
+  const header = demoFourLanding.match(/<header className="demo-four-header">[\s\S]*?<\/header>/)?.[0] ?? "";
+  assert.match(header, /demo-four-house-logo/);
+  assert.doesNotMatch(header, /<nav|Meet the Team|Easy Exit/);
+  assert.match(styles, /demo-4-photographer-hero\.png/);
+  assert.match(demoFourLanding, /<\/section>\s*<section className="demo-four-team-strip"[\s\S]*?<h2>Meet the team behind every visit\.<\/h2>[\s\S]*?<a[^>]+>Meet the Team/);
+  assert.match(demoFourLanding, /Review(?:s)? from our vendors/i);
+  assert.match(demoFourLanding, /View photos and video samples/i);
+  assert.match(demoFourSamples, /Exterior Photos/);
+  assert.match(demoFourSamples, /360 Street View/);
+  assert.match(demoFourSamples, /Exterior Video Tour/);
+  assert.match(demoFourSamples, /Interior Video Tour/);
+  assert.match(demoFourSamples, /Living Room/);
+  assert.match(demoFourSamples, /Kitchen/);
+  assert.match(demoFourSamples, /Bathroom/);
+  assert.match(demoFourSamples, /Mechanicals/);
+  assert.match(demoFourLanding, /Photographer(?:&apos;|')s Info/);
+  assert.match(demoFourLanding, /<DemoFourSamples \/>/);
+  assert.match(demoFourLanding, /<SubmissionForm showChecklist=\{false\} \/>/);
+  assert.match(form, /showChecklist = true/);
+  assert.doesNotMatch(demoFourLanding, /id="photo-checklist"/);
+  assert.match(demoFourSamples, /map_action=pano&viewpoint=-?\d+\.\d+%2C-?\d+\.\d+/);
+  assert.match(demoFourLanding, /demo-4-review-portraits\.png/);
+  assert.deepEqual([...demoFourLanding.matchAll(/avatarPosition: "([^"]+)"/g)].map((match) => match[1]), ["0%", "25%", "50%", "75%", "100%"]);
+  assert.equal([...demoFourLanding.matchAll(/rating: 5/g)].length, 5);
+  assert.match(demoFourSamples, /"use client"/);
+  assert.match(demoFourSamples, /role="tablist"/);
+  assert.match(demoFourSamples, /Exterior/);
+  assert.match(demoFourSamples, /Street View/);
+  assert.match(demoFourSamples, /Videos/);
+  assert.match(demoFourSamples, /Interior/);
+  assert.match(demoFourSamples, /Mechanicals/);
+  assert.match(styles, /\.photographer-demo-four/);
+  assert.match(styles, /\.demo-four-review-avatar[^}]+background-size: 500% auto[^}]+background-position-y: center/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.demo-four-samples/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.demo-four-hero[^}]+background-position: 88% center/);
+  assert.doesNotMatch(styles, /\.demo-four-header nav a:first-child\s*\{\s*display:\s*none/);
+  assert.match(styles, /\.demo-four-video\s*\{[^}]*display:\s*grid/);
+  assert.match(styles, /\.demo-four-video\s*>\s*span\s*\{[^}]*position:\s*static/);
 });
 
 test("demo 3 uses its own enhanced local hero image", async () => {

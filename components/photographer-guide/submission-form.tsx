@@ -3,7 +3,7 @@
 import { ArrowRight, CheckCircle2, Send } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
-export function SubmissionForm() {
+export function SubmissionForm({ showChecklist = true }: { showChecklist?: boolean } = {}) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,7 +33,7 @@ export function SubmissionForm() {
         <label suppressHydrationWarning>Property Address<input suppressHydrationWarning data-lpignore="true" data-1p-ignore type="text" name="propertyAddress" autoComplete="street-address" required /></label>
         <label className="landing-drive-field" suppressHydrationWarning>Google Drive Link<input suppressHydrationWarning data-lpignore="true" data-1p-ignore type="url" name="driveLink" inputMode="url" autoComplete="url" placeholder="https://drive.google.com/drive/folders/..." required /></label>
       </div>
-      <div className="landing-checklist-confirm"><input id="checklist-complete" type="checkbox" name="checklistComplete" required /><label htmlFor="checklist-complete">Did you complete the photo checklist?</label><a href="#photo-checklist">Review the checklist</a></div>
+      {showChecklist && <div className="landing-checklist-confirm"><input id="checklist-complete" type="checkbox" name="checklistComplete" required /><label htmlFor="checklist-complete">Did you complete the photo checklist?</label><a href="#photo-checklist">Review the checklist</a></div>}
       {error && <p className="landing-form-error" role="alert">{error}</p>}
       <div className="landing-form-submit"><small>Demo only—nothing will be sent or saved yet.</small><button className="button primary" type="submit">Submit Photos <ArrowRight size={17} aria-hidden="true" /></button></div>
     </form>
