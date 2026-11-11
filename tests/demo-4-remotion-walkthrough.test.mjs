@@ -10,6 +10,7 @@ import {
 } from "../remotion/walkthrough-manifest.mjs";
 import {
   EXTERIOR_END_SCALE,
+  EXTERIOR_FPS,
   EXTERIOR_SCENE_FRAMES,
   EXTERIOR_START_SCALE,
   EXTERIOR_TOTAL_FRAMES,
@@ -17,6 +18,12 @@ import {
   EXTERIOR_WALKTHROUGH_SCENES,
   getExteriorSceneOpacity,
 } from "../remotion/exterior-walkthrough-manifest.mjs";
+import {
+  WALKING_BOB_AMPLITUDE,
+  WALKING_END_SCALE,
+  WALKING_START_SCALE,
+  getWalkingOffset,
+} from "../remotion/walking-motion.mjs";
 
 test("walkthrough manifest covers the approved nine-room route in 60 seconds", () => {
   assert.equal(FPS, 30);
@@ -69,12 +76,22 @@ test("walkthrough uses existing local images and no overlays", () => {
   }
 });
 
-test("exterior walkthrough uses a strong six-view forward route", () => {
-  assert.equal(EXTERIOR_START_SCALE, 1.04);
-  assert.equal(EXTERIOR_END_SCALE, 1.2);
+test("exterior walkthrough uses a strong nine-view forward route", () => {
+  assert.equal(EXTERIOR_START_SCALE, 1.025);
+  assert.equal(EXTERIOR_END_SCALE, 1.24);
   assert.deepEqual(
     EXTERIOR_WALKTHROUGH_SCENES.map(({ id }) => id),
-    ["front", "front-driveway", "side-yard", "rear-side", "fence-boundary", "rear"],
+    [
+      "front",
+      "front-driveway",
+      "side-yard",
+      "rear-side",
+      "fence-boundary",
+      "rear",
+      "ac-condenser",
+      "electrical-service",
+      "electric-meter",
+    ],
   );
   assert.equal(
     EXTERIOR_WALKTHROUGH_SCENES.reduce((sum, scene) => sum + scene.frames, 0),
@@ -104,4 +121,48 @@ test("exterior crossfades retain full frame coverage", () => {
 
     assert.equal(compositedCoverage, 1, `under-covered frame ${transitionFrame}`);
   }
+});
+
+test("both tours use continuous first-person walking motion for one minute", () => {
+  assert.equal(TOTAL_FRAMES, FPS * 60);
+  assert.equal(EXTERIOR_TOTAL_FRAMES, EXTERIOR_FPS * 60);
+  assert.equal(WALKING_START_SCALE, 1.025);
+  assert.equal(WALKING_END_SCALE, 1.24);
+  assert.ok(WALKING_BOB_AMPLITUDE > 0);
+
+  const quarterStep = getWalkingOffset(5, 30);
+  const halfStep = getWalkingOffset(10, 30);
+  assert.notEqual(quarterStep.y, halfStep.y);
+  assert.notEqual(quarterStep.x, halfStep.x);
+});
+
+test("interior and exterior routes visit every required area", () => {
+  assert.deepEqual(
+    WALKTHROUGH_SCENES.map(({ id }) => id),
+    [
+      "entry",
+      "living-room",
+      "dining-area",
+      "kitchen",
+      "hallway",
+      "primary-bedroom",
+      "second-bedroom",
+      "bathroom",
+      "laundry-utility",
+    ],
+  );
+  assert.deepEqual(
+    EXTERIOR_WALKTHROUGH_SCENES.map(({ id }) => id),
+    [
+      "front",
+      "front-driveway",
+      "side-yard",
+      "rear-side",
+      "fence-boundary",
+      "rear",
+      "ac-condenser",
+      "electrical-service",
+      "electric-meter",
+    ],
+  );
 });

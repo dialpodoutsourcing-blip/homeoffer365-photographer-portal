@@ -1,10 +1,15 @@
+import {
+  WALKING_END_SCALE,
+  WALKING_START_SCALE,
+} from "./walking-motion.mjs";
+
 export const EXTERIOR_FPS = 30;
 export const EXTERIOR_WIDTH = 1920;
 export const EXTERIOR_HEIGHT = 1080;
-export const EXTERIOR_SCENE_FRAMES = 180;
-export const EXTERIOR_TRANSITION_FRAMES = 24;
-export const EXTERIOR_START_SCALE = 1.04;
-export const EXTERIOR_END_SCALE = 1.2;
+export const EXTERIOR_SCENE_FRAMES = 200;
+export const EXTERIOR_TRANSITION_FRAMES = 18;
+export const EXTERIOR_START_SCALE = WALKING_START_SCALE;
+export const EXTERIOR_END_SCALE = WALKING_END_SCALE;
 
 const smoothstep = (value) => value * value * (3 - 2 * value);
 
@@ -65,6 +70,30 @@ export const EXTERIOR_WALKTHROUGH_SCENES = [
     frames: EXTERIOR_SCENE_FRAMES,
     panX: 0,
     panY: -0.2,
+    overlay: null,
+  },
+  {
+    id: "ac-condenser",
+    src: "images/photo-examples/pennsylvania-brick-bungalow/mechanical-ac-condenser.png",
+    frames: EXTERIOR_SCENE_FRAMES,
+    panX: 0.35,
+    panY: 0.05,
+    overlay: null,
+  },
+  {
+    id: "electrical-service",
+    src: "images/photo-examples/pennsylvania-brick-bungalow/mechanical-electrical-service-context.png",
+    frames: EXTERIOR_SCENE_FRAMES,
+    panX: -0.3,
+    panY: 0,
+    overlay: null,
+  },
+  {
+    id: "electric-meter",
+    src: "images/photo-examples/pennsylvania-brick-bungalow/mechanical-electric-meter-close.jpg",
+    frames: EXTERIOR_SCENE_FRAMES,
+    panX: 0.2,
+    panY: 0.05,
     overlay: null,
   },
 ];

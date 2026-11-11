@@ -6,7 +6,7 @@
     "studio": "cd .. && remotion studio remotion/index.ts",
     "render": "cd .. && remotion render remotion/index.ts Demo4InteriorWalkthrough public/videos/demo-4-interior-walkthrough.mp4 --codec=h264 --crf=24 --pixel-format=yuv420p --concurrency=50%",
     "poster": "cd .. && remotion still remotion/index.ts Demo4InteriorWalkthrough public/images/photo-examples/demo-4-interior-walkthrough-poster.jpg --frame=260 --image-format=jpeg --jpeg-quality=88",
-    "render:exterior": "cd .. && remotion render remotion/index.ts Demo4ExteriorWalkthrough public/videos/demo-4-exterior-walkthrough.mp4 --codec=h264 --crf=24 --pixel-format=yuv420p --concurrency=25%",
+    "render:exterior": "cd .. && remotion render remotion/index.ts Demo4ExteriorWalkthrough public/videos/demo-4-exterior-walkthrough.mp4 --codec=h264 --crf=28 --pixel-format=yuv420p --concurrency=25%",
     "poster:exterior": "cd .. && remotion still remotion/index.ts Demo4ExteriorWalkthrough public/images/photo-examples/demo-4-exterior-walkthrough-poster.jpg --frame=90 --image-format=jpeg --jpeg-quality=88"
   },
   "dependencies": {

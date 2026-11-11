@@ -12,6 +12,11 @@ import {
   TRANSITION_FRAMES,
   WALKTHROUGH_SCENES,
 } from "./walkthrough-manifest.mjs";
+import {
+  WALKING_END_SCALE,
+  WALKING_START_SCALE,
+  getWalkingOffset,
+} from "./walking-motion.mjs";
 
 export const Demo4InteriorWalkthrough = () => {
   const frame = useCurrentFrame();
@@ -27,9 +32,14 @@ export const Demo4InteriorWalkthrough = () => {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
-        const scale = interpolate(progress, [0, 1], [1.035, 1.105]);
+        const scale = interpolate(
+          progress,
+          [0, 1],
+          [WALKING_START_SCALE, WALKING_END_SCALE],
+        );
         const translateX = interpolate(progress, [0, 1], [-scene.panX, scene.panX]);
         const translateY = interpolate(progress, [0, 1], [-scene.panY, scene.panY]);
+        const walkingOffset = getWalkingOffset(Math.max(0, localFrame), 30);
 
         if (localFrame < 0 || localFrame > SCENE_FRAMES + TRANSITION_FRAMES)
           return null;
@@ -45,7 +55,7 @@ export const Demo4InteriorWalkthrough = () => {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                transform: `translate3d(${translateX}%, ${translateY}%, 0) scale(${scale})`,
+                transform: `translate3d(${translateX + walkingOffset.x}%, ${translateY + walkingOffset.y}%, 0) scale(${scale})`,
                 transformOrigin: "center center",
               }}
             />

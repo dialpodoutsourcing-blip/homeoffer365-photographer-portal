@@ -3,7 +3,7 @@ export const TOTAL_FRAMES = 1800;
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
 export const SCENE_FRAMES = 200;
-export const TRANSITION_FRAMES = 28;
+export const TRANSITION_FRAMES = 18;
 
 const smoothstep = (value) => value * value * (3 - 2 * value);
 

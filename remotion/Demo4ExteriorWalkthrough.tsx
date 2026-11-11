@@ -1,6 +1,5 @@
 import {
   AbsoluteFill,
-  Easing,
   Img,
   interpolate,
   staticFile,
@@ -15,6 +14,7 @@ import {
   EXTERIOR_WALKTHROUGH_SCENES,
   getExteriorSceneOpacity,
 } from "./exterior-walkthrough-manifest.mjs";
+import { getWalkingOffset } from "./walking-motion.mjs";
 
 export const Demo4ExteriorWalkthrough = () => {
   const frame = useCurrentFrame();
@@ -31,7 +31,6 @@ export const Demo4ExteriorWalkthrough = () => {
           [0, EXTERIOR_SCENE_FRAMES],
           [0, 1],
           {
-            easing: Easing.inOut(Easing.cubic),
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
           },
@@ -51,6 +50,7 @@ export const Demo4ExteriorWalkthrough = () => {
           [0, 1],
           [-scene.panY, scene.panY],
         );
+        const walkingOffset = getWalkingOffset(Math.max(0, localFrame), 30);
 
         if (
           localFrame < 0 ||
@@ -71,7 +71,7 @@ export const Demo4ExteriorWalkthrough = () => {
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                transform: `translate3d(${translateX}%, ${translateY}%, 0) scale(${scale})`,
+                transform: `translate3d(${translateX + walkingOffset.x}%, ${translateY + walkingOffset.y}%, 0) scale(${scale})`,
                 transformOrigin: "center center",
               }}
             />
