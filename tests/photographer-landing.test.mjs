@@ -20,10 +20,10 @@ const demoThreeHeroPath = new URL("../public/images/photo-examples/equity-drive/
 const demoFourHeroPath = new URL("../public/images/photo-examples/demo-4-photographer-hero.webp", import.meta.url);
 const demoFourAvatarsPath = new URL("../public/images/review-avatars/demo-4-review-portraits.webp", import.meta.url);
 const demoFourExteriorWalkthroughPath = new URL("../public/videos/demo-4-exterior-guided-tour-v2.mp4", import.meta.url);
-const demoFourInteriorWalkthroughPath = new URL("../public/videos/demo-4-interior-guided-tour-v2.mp4", import.meta.url);
+const demoFourInteriorWalkthroughPath = new URL("../public/videos/demo-4-interior-supplied-tour-v3.mp4", import.meta.url);
 const demoFourWalkthroughPosterPaths = [
   "demo-4-exterior-guided-tour-v2-poster.jpg",
-  "demo-4-interior-guided-tour-v2-poster.jpg",
+  "demo-4-interior-supplied-tour-v3-poster.jpg",
 ].map((filename) => new URL(`../public/images/photo-examples/${filename}`, import.meta.url));
 const demoFourFencePath = new URL("../public/images/photo-examples/pennsylvania-brick-bungalow/exterior-fence-property-boundary.png", import.meta.url);
 const demoFourNewInteriorPaths = [
@@ -110,9 +110,9 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /Interior/);
   assert.match(demoFourSamples, /Mechanicals/);
   assert.match(demoFourSamples, /demo-4-exterior-guided-tour-v2\.mp4/);
-  assert.match(demoFourSamples, /demo-4-interior-guided-tour-v2\.mp4/);
+  assert.match(demoFourSamples, /demo-4-interior-supplied-tour-v3\.mp4/);
   assert.match(demoFourSamples, /demo-4-exterior-guided-tour-v2-poster\.jpg/);
-  assert.match(demoFourSamples, /demo-4-interior-guided-tour-v2-poster\.jpg/);
+  assert.match(demoFourSamples, /demo-4-interior-supplied-tour-v3-poster\.jpg/);
   assert.doesNotMatch(demoFourSamples, /Video Tours|Full Property Video Tour|ai-pennsylvania-property-tour\.mp4/);
   assert.equal((demoFourSamples.match(/<video /g) ?? []).length, 2);
   assert.match(styles, /\.photographer-demo-four/);
