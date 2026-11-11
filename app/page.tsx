@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { PhotographerLanding } from "@/components/photographer-guide/photographer-landing";
+import { PhotographerDemoFour } from "@/components/photographer-guide/photographer-demo-four";
 
 export const metadata: Metadata = {
-  title: "Photographers | Home Offer 365",
-  description: "Home Offer 365 photography and video resources, examples, checklist, and submission guidance.",
+  title: "Welcome to Home Offer 365 | Photographer Demo 4",
+  description: "A concise photo, video, and submission guide for Home Offer 365 photographers.",
 };
 
 export default function Home() {
-  return <div className="landing-demo-standalone"><PhotographerLanding /></div>;
+  return <div className="landing-demo-standalone"><PhotographerDemoFour /></div>;
 }

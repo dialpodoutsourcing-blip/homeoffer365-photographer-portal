@@ -33,6 +33,14 @@ const demoFourNewInteriorPaths = [
   "interior-bathroom-vanity-plumbing.png",
 ].map((filename) => new URL(`../public/images/photo-examples/pennsylvania-brick-bungalow/${filename}`, import.meta.url));
 
+test("the site root loads demo 4 first", async () => {
+  const rootPage = await readFile(demoOnePath, "utf8");
+
+  assert.match(rootPage, /import \{ PhotographerDemoFour \}/);
+  assert.match(rootPage, /<PhotographerDemoFour \/>/);
+  assert.doesNotMatch(rootPage, /PhotographerLanding/);
+});
+
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
   const [landing, demoTwo, demoThree] = await Promise.all([
     readFile(landingPath, "utf8"),
@@ -245,16 +253,14 @@ test("photo checklist uses compact collapsible rows", async () => {
 });
 
 test("photographers landing page presents every requested resource without a database flow", async () => {
-  const [landing, demoOne, production, demoOneAlias, demoTwo, styles] = await Promise.all([
+  const [landing, production, demoOneAlias, demoTwo, styles] = await Promise.all([
     readFile(landingPath, "utf8"),
-    readFile(demoOnePath, "utf8"),
     readFile(productionPath, "utf8"),
     readFile(demoOneAliasPath, "utf8"),
     readFile(demoTwoPath, "utf8"),
     readFile(stylesPath, "utf8"),
   ]);
 
-  assert.match(demoOne, /PhotographerLanding/);
   assert.match(production, /PhotographerLanding/);
   assert.match(production, /landing-demo-standalone/);
   assert.match(demoOneAlias, /Welcome/);
