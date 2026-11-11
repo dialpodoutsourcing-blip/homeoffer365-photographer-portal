@@ -1,0 +1,15 @@
+{
+  "name": "homeoffer365-demo-4-walkthrough",
+  "private": true,
+  "scripts": {
+    "studio": "cd .. && remotion studio remotion/index.ts",
+    "render": "cd .. && remotion render remotion/index.ts Demo4InteriorWalkthrough public/videos/demo-4-interior-walkthrough.mp4 --codec=h264 --crf=24 --pixel-format=yuv420p --concurrency=50%",
+    "poster": "cd .. && remotion still remotion/index.ts Demo4InteriorWalkthrough public/images/photo-examples/demo-4-interior-walkthrough-poster.jpg --frame=260 --image-format=jpeg --jpeg-quality=88"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.542",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.542"
+  }
+}
