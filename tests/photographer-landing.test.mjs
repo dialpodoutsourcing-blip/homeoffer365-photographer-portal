@@ -25,7 +25,6 @@ const demoFourWalkthroughPosterPaths = [
   "demo-4-exterior-walkthrough-poster.jpg",
   "demo-4-interior-walkthrough-poster.jpg",
 ].map((filename) => new URL(`../public/images/photo-examples/${filename}`, import.meta.url));
-const streetViewVideoPath = new URL("../public/videos/ai-pennsylvania-street-360.mp4", import.meta.url);
 const demoFourFencePath = new URL("../public/images/photo-examples/pennsylvania-brick-bungalow/exterior-fence-property-boundary.png", import.meta.url);
 const demoFourNewInteriorPaths = [
   "interior-dining-area.png",
@@ -82,7 +81,10 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /demo-four-gallery-main/);
   assert.match(demoFourSamples, /demo-four-gallery-thumbnails/);
   assert.match(demoFourSamples, /aria-pressed=\{selectedIndex === index\}/);
-  assert.match(demoFourSamples, /className="demo-four-sample demo-four-video demo-four-street-view"><video/);
+  assert.match(demoFourSamples, /className="demo-four-street-view"[\s\S]*?<iframe/);
+  assert.match(demoFourSamples, /maps\.google\.com\/maps\?q=40\.3409,-76\.4113[^"']+output=svembed/);
+  assert.match(demoFourSamples, /title="Interactive 360° Google Street View"/);
+  assert.match(demoFourSamples, /allowFullScreen/);
   assert.match(demoFourSamples, /Exterior Video Walkthrough/);
   assert.match(demoFourSamples, /Interior Video Walkthrough/);
   assert.match(demoFourSamples, /Living Room/);
@@ -95,7 +97,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(demoFourLanding, /demo-four-floating-submit|<Camera/);
   assert.match(form, /showChecklist = true/);
   assert.doesNotMatch(demoFourLanding, /id="photo-checklist"/);
-  assert.doesNotMatch(demoFourSamples, /target="_blank"|map_action=pano/);
+  assert.doesNotMatch(demoFourSamples, /target="_blank"|map_action=pano|ai-pennsylvania-street-360\.mp4/);
   assert.match(demoFourLanding, /demo-4-review-portraits\.webp/);
   assert.deepEqual([...demoFourLanding.matchAll(/avatarPosition: "([^"]+)"/g)].map((match) => match[1]), ["0%", "25%", "50%", "75%", "100%"]);
   assert.equal([...demoFourLanding.matchAll(/rating: 5/g)].length, 5);
@@ -111,9 +113,8 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /demo-4-interior-walkthrough\.mp4/);
   assert.match(demoFourSamples, /demo-4-exterior-walkthrough-poster\.jpg/);
   assert.match(demoFourSamples, /demo-4-interior-walkthrough-poster\.jpg/);
-  assert.match(demoFourSamples, /ai-pennsylvania-street-360\.mp4/);
   assert.doesNotMatch(demoFourSamples, /Video Tours|Full Property Video Tour|ai-pennsylvania-property-tour\.mp4/);
-  assert.equal((demoFourSamples.match(/<video /g) ?? []).length, 3);
+  assert.equal((demoFourSamples.match(/<video /g) ?? []).length, 2);
   assert.match(styles, /\.photographer-demo-four/);
   assert.match(styles, /\.demo-four-review-avatar[^}]+background-size: 500% auto[^}]+background-position-y: center/);
   assert.doesNotMatch(styles, /\.demo-four-floating-submit/);
@@ -129,19 +130,17 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
 });
 
 test("demo 4 uses lightweight hero, review, and generated property media", async () => {
-  const [heroImage, avatarImage, exteriorWalkthrough, interiorWalkthrough, streetVideo] = await Promise.all([
+  const [heroImage, avatarImage, exteriorWalkthrough, interiorWalkthrough] = await Promise.all([
     stat(demoFourHeroPath),
     stat(demoFourAvatarsPath),
     stat(demoFourExteriorWalkthroughPath),
     stat(demoFourInteriorWalkthroughPath),
-    stat(streetViewVideoPath),
   ]);
 
   assert.ok(heroImage.size < 250_000, `hero image is ${heroImage.size} bytes`);
   assert.ok(avatarImage.size < 100_000, `avatar sprite is ${avatarImage.size} bytes`);
   assert.ok(exteriorWalkthrough.size > 1_000_000 && exteriorWalkthrough.size < 40_000_000, `exterior walkthrough is ${exteriorWalkthrough.size} bytes`);
   assert.ok(interiorWalkthrough.size > 1_000_000 && interiorWalkthrough.size < 40_000_000, `interior walkthrough is ${interiorWalkthrough.size} bytes`);
-  assert.ok(streetVideo.size > 500_000 && streetVideo.size < 40_000_000, `street video is ${streetVideo.size} bytes`);
   for (const posterPath of demoFourWalkthroughPosterPaths) assert.ok((await stat(posterPath)).size > 20_000);
 });
 

@@ -75,7 +75,16 @@ export function DemoFourSamples() {
           {gallery.map((photo, index) => <button type="button" aria-label={`Show ${photo.label}`} aria-pressed={selectedIndex === index} onClick={() => setSelectedIndex(index)} key={photo.src}><Image src={photo.src} alt="" width={150} height={96} sizes="90px" /></button>)}
         </div>
       </div>}
-      {activeTab === "Street View" && <article className="demo-four-sample demo-four-video demo-four-street-view"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/pennsylvania-brick-bungalow/exterior-front.png" aria-label="360-style exterior street view video"><source src="/videos/ai-pennsylvania-street-360.mp4" type="video/mp4" />Your browser does not support embedded video.</video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> 360° Exterior Street View</strong><small>Front, sides, and rear property context</small></span></article>}
+      {activeTab === "Street View" && <div className="demo-four-street-view">
+        <iframe
+          title="Interactive 360° Google Street View"
+          src="https://maps.google.com/maps?q=40.3409,-76.4113&layer=c&cbll=40.3409,-76.4113&cbp=11,0,0,0,0&output=svembed"
+          loading="lazy"
+          allowFullScreen
+          referrerPolicy="no-referrer-when-downgrade"
+          style={{ width: "100%", height: "clamp(380px, 62vw, 680px)", display: "block", border: 0 }}
+        />
+      </div>}
       {activeTab === "Video Walkthroughs" && <div className="demo-four-walkthrough-grid">
         <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/demo-4-exterior-walkthrough-poster.jpg" aria-label="Continuous exterior video walkthrough"><source src="/videos/demo-4-exterior-walkthrough.mp4" type="video/mp4" />Your browser does not support embedded video.</video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Exterior Video Walkthrough</strong><small>One continuous walk around the home and property</small></span></article>
         <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/demo-4-interior-walkthrough-poster.jpg" aria-label="Continuous interior video walkthrough"><source src="/videos/demo-4-interior-walkthrough.mp4" type="video/mp4" />Your browser does not support embedded video.</video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Interior Video Walkthrough</strong><small>One continuous room-to-room walkthrough inside the home</small></span></article>
