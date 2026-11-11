@@ -4,9 +4,9 @@ import Image from "next/image";
 import { Play } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 
-const tabs = ["Exterior", "Street View", "Video Walkthroughs", "Interior", "Mechanicals"] as const;
+const tabs = ["Exterior", "Street View", "Video Walkthroughs", "Interior", "Basement", "Mechanicals"] as const;
 type SampleTab = (typeof tabs)[number];
-type GalleryTab = Extract<SampleTab, "Exterior" | "Interior" | "Mechanicals">;
+type GalleryTab = Extract<SampleTab, "Exterior" | "Interior" | "Basement" | "Mechanicals">;
 
 const galleryGroups: Record<GalleryTab, readonly { label: string; src: string }[]> = {
   Exterior: [
@@ -18,6 +18,10 @@ const galleryGroups: Record<GalleryTab, readonly { label: string; src: string }[
     { label: "Rear elevation", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-rear.png" },
     { label: "Exterior AC condenser", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-ac-condenser.png" },
     { label: "Exterior electrical service", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electrical-service-context.png" },
+    { label: "Front-left curb view", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-front-left-curb.webp" },
+    { label: "Right-side elevation", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-right-side-elevation.webp" },
+    { label: "Backyard and rear elevation", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-backyard-wide.webp" },
+    { label: "Roof, soffit, and gutters", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-roof-soffit-gutters.webp" },
   ],
   Interior: [
     { label: "Living Room", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-living-room.png" },
@@ -30,15 +34,42 @@ const galleryGroups: Record<GalleryTab, readonly { label: string; src: string }[
     { label: "Bathroom", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bathroom.png" },
     { label: "Bathroom vanity plumbing", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bathroom-vanity-plumbing.png" },
     { label: "Laundry Room", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-laundry.png" },
+    { label: "Entry foyer", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-entry-foyer.webp" },
+    { label: "Living room reverse view", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-living-room-reverse.webp" },
+    { label: "Dining room reverse view", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-dining-room-reverse.webp" },
+    { label: "Kitchen wide view", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-kitchen-wide.webp" },
+    { label: "Kitchen appliance wall", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-kitchen-appliance-wall.webp" },
+    { label: "Kitchen cabinets and counters", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-kitchen-cabinet-counter.webp" },
+    { label: "Primary bedroom reverse view", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-primary-bedroom-reverse.webp" },
+    { label: "Primary bedroom closet", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-primary-closet.webp" },
+    { label: "Second bedroom reverse view", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-second-bedroom-reverse.webp" },
+    { label: "Bathroom tub and shower", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-bathroom-tub-shower.webp" },
+    { label: "Hallway linen storage", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-hallway-linen-storage.webp" },
+    { label: "Mudroom and back entry", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-mudroom-back-entry.webp" },
+    { label: "Basement stair access", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-basement-stair-door.webp" },
+    { label: "Laundry reverse view", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-laundry-reverse.webp" },
+  ],
+  Basement: [
+    { label: "Basement overview", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-basement-overview.png" },
+    { label: "Basement stair landing", src: "/images/photo-examples/pennsylvania-brick-bungalow/basement-stair-landing.webp" },
+    { label: "Foundation walls", src: "/images/photo-examples/pennsylvania-brick-bungalow/basement-foundation-walls.webp" },
+    { label: "Floor drain condition", src: "/images/photo-examples/pennsylvania-brick-bungalow/basement-floor-drain-condition.webp" },
+    { label: "Basement window and egress", src: "/images/photo-examples/pennsylvania-brick-bungalow/basement-window-egress.webp" },
+    { label: "Basement storage area", src: "/images/photo-examples/pennsylvania-brick-bungalow/basement-storage-area.webp" },
+    { label: "Support beam and columns", src: "/images/photo-examples/pennsylvania-brick-bungalow/basement-support-beam-columns.webp" },
+    { label: "Basement exterior exit", src: "/images/photo-examples/pennsylvania-brick-bungalow/basement-exterior-exit.webp" },
   ],
   Mechanicals: [
-    { label: "Basement utility overview", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-basement-overview.png" },
     { label: "Furnace and ductwork", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-furnace-ductwork.png" },
     { label: "Modern furnace", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-furnace-modern.png" },
     { label: "Water heater", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-water-heater.png" },
     { label: "Water softener", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-water-softener.png" },
     { label: "Well pump system", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-well-pump.png" },
     { label: "Breaker panel", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-breaker-panel.png" },
+    { label: "Main water shutoff", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-main-water-shutoff.webp" },
+    { label: "Sump pump", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-sump-pump.webp" },
+    { label: "HVAC service connections", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-hvac-service-connections.webp" },
+    { label: "Plumbing distribution", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-plumbing-distribution.webp" },
   ],
 };
 
@@ -60,7 +91,7 @@ export function DemoFourSamples() {
     document.getElementById(`demo-four-tab-${nextIndex}`)?.focus();
   }
 
-  const gallery = activeTab === "Exterior" || activeTab === "Interior" || activeTab === "Mechanicals" ? galleryGroups[activeTab] : null;
+  const gallery = activeTab === "Exterior" || activeTab === "Interior" || activeTab === "Basement" || activeTab === "Mechanicals" ? galleryGroups[activeTab] : null;
   const selectedPhoto = gallery?.[selectedIndex] ?? gallery?.[0];
 
   return <div className="demo-four-sample-tabs">

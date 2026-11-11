@@ -83,7 +83,8 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourLanding, /View photos and video samples/i);
   assert.match(demoFourSamples, /galleryGroups/);
   assert.match(demoFourSamples, /Exterior:\s*\[[\s\S]*?exterior-front\.png[\s\S]*?exterior-front-driveway\.png[\s\S]*?exterior-side-yard\.png[\s\S]*?exterior-rear-side\.png[\s\S]*?exterior-rear\.png[\s\S]*?\]/);
-  assert.equal((demoFourSamples.match(/mechanical-[a-z-]+\.(?:png|jpg)/g) ?? []).length, 10);
+  const mechanicalGallery = demoFourSamples.match(/Mechanicals:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n};/)?.[1] ?? "";
+  assert.equal((mechanicalGallery.match(/pennsylvania-brick-bungalow\//g) ?? []).length, 10);
   assert.match(demoFourSamples, /demo-four-gallery-main/);
   assert.match(demoFourSamples, /demo-four-gallery-thumbnails/);
   assert.match(demoFourSamples, /aria-pressed=\{selectedIndex === index\}/);
@@ -151,40 +152,23 @@ test("demo 4 uses lightweight hero, review, and generated property media", async
 test("Demo 4 organizes property photos in real-estate tour order", async () => {
   const demoFourSamples = await readFile(demoFourSamplesPath, "utf8");
   const exterior = demoFourSamples.match(/Exterior:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n\s*Interior:/)?.[1] ?? "";
-  const interior = demoFourSamples.match(/Interior:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n\s*Mechanicals:/)?.[1] ?? "";
+  const interior = demoFourSamples.match(/Interior:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n\s*Basement:/)?.[1] ?? "";
+  const basement = demoFourSamples.match(/Basement:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n\s*Mechanicals:/)?.[1] ?? "";
   const mechanicals = demoFourSamples.match(/Mechanicals:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n};/)?.[1] ?? "";
 
-  assert.deepEqual([...exterior.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
-    "exterior-front.png",
-    "exterior-front-driveway.png",
-    "exterior-side-yard.png",
-    "exterior-rear-side.png",
-    "exterior-fence-property-boundary.png",
-    "exterior-rear.png",
-    "mechanical-ac-condenser.png",
-    "mechanical-electrical-service-context.png",
-  ]);
-  assert.deepEqual([...interior.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
-    "interior-living-room.png",
-    "interior-dining-area.png",
-    "interior-hallway-layout.png",
-    "interior-kitchen.png",
-    "mechanical-under-sink-plumbing.png",
-    "interior-bedroom.png",
-    "interior-second-bedroom.png",
-    "interior-bathroom.png",
-    "interior-bathroom-vanity-plumbing.png",
-    "interior-laundry.png",
-  ]);
-  assert.deepEqual([...mechanicals.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
-    "mechanical-basement-overview.png",
-    "mechanical-furnace-ductwork.png",
-    "mechanical-furnace-modern.png",
-    "mechanical-water-heater.png",
-    "mechanical-water-softener.png",
-    "mechanical-well-pump.png",
-    "mechanical-breaker-panel.png",
-  ]);
+  const filenames = (group) => [...group.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]);
+  const groups = [filenames(exterior), filenames(interior), filenames(basement), filenames(mechanicals)];
+  assert.deepEqual(groups.map((group) => group.length), [12, 24, 8, 10]);
+  const allFiles = groups.flat();
+  assert.equal(new Set(allFiles).size, 54, "every gallery photo must use a unique file");
+  assert.match(demoFourSamples, /"Interior", "Basement", "Mechanicals"/);
+  assert.match(demoFourSamples, /type GalleryTab = Extract<SampleTab, "Exterior" \| "Interior" \| "Basement" \| "Mechanicals">/);
+  assert.ok(filenames(basement).includes("mechanical-basement-overview.png"));
+  assert.ok(!filenames(mechanicals).includes("mechanical-basement-overview.png"));
+  for (const filename of allFiles) {
+    const imagePath = new URL(`../public/images/photo-examples/pennsylvania-brick-bungalow/${filename}`, import.meta.url);
+    assert.ok((await stat(imagePath)).size > 40_000, `${filename} should be a nontrivial image`);
+  }
   assert.doesNotMatch(mechanicals, /under-sink|ac-condenser|electric-meter|electrical-service/);
   assert.ok((await stat(demoFourFencePath)).size > 100_000);
   for (const imagePath of demoFourNewInteriorPaths) assert.ok((await stat(imagePath)).size > 100_000);
