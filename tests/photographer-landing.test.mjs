@@ -82,7 +82,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /demo-four-gallery-thumbnails/);
   assert.match(demoFourSamples, /aria-pressed=\{selectedIndex === index\}/);
   assert.match(demoFourSamples, /className="demo-four-street-view"[\s\S]*?<iframe/);
-  assert.match(demoFourSamples, /maps\.google\.com\/maps\?q=40\.3409,-76\.4113[^"']+output=svembed/);
+  assert.match(demoFourSamples, /maps\.google\.com\/maps\?q=33\.900886,-84\.534285[^"']+output=svembed/);
   assert.match(demoFourSamples, /title="Interactive 360° Google Street View"/);
   assert.match(demoFourSamples, /allowFullScreen/);
   assert.match(demoFourSamples, /Exterior Video Walkthrough/);

@@ -78,7 +78,7 @@ export function DemoFourSamples() {
       {activeTab === "Street View" && <div className="demo-four-street-view">
         <iframe
           title="Interactive 360° Google Street View"
-          src="https://maps.google.com/maps?q=40.3409,-76.4113&layer=c&cbll=40.3409,-76.4113&cbp=11,0,0,0,0&output=svembed"
+          src="https://maps.google.com/maps?q=33.900886,-84.534285&layer=c&cbll=33.900886,-84.534285&cbp=11,0,0,0,0&output=svembed"
           loading="lazy"
           allowFullScreen
           referrerPolicy="no-referrer-when-downgrade"
