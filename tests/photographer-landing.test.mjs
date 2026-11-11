@@ -19,9 +19,20 @@ const walkthroughVideoPath = new URL("../public/videos/ai-pennsylvania-property-
 const demoThreeHeroPath = new URL("../public/images/photo-examples/equity-drive/demo-3-hero-enhanced.png", import.meta.url);
 const demoFourHeroPath = new URL("../public/images/photo-examples/demo-4-photographer-hero.webp", import.meta.url);
 const demoFourAvatarsPath = new URL("../public/images/review-avatars/demo-4-review-portraits.webp", import.meta.url);
-const demoFourVideoPath = new URL("../public/videos/ai-pennsylvania-property-tour.mp4", import.meta.url);
+const demoFourExteriorWalkthroughPath = new URL("../public/videos/demo-4-exterior-walkthrough.mp4", import.meta.url);
+const demoFourInteriorWalkthroughPath = new URL("../public/videos/demo-4-interior-walkthrough.mp4", import.meta.url);
+const demoFourWalkthroughPosterPaths = [
+  "demo-4-exterior-walkthrough-poster.jpg",
+  "demo-4-interior-walkthrough-poster.jpg",
+].map((filename) => new URL(`../public/images/photo-examples/${filename}`, import.meta.url));
 const streetViewVideoPath = new URL("../public/videos/ai-pennsylvania-street-360.mp4", import.meta.url);
 const demoFourFencePath = new URL("../public/images/photo-examples/pennsylvania-brick-bungalow/exterior-fence-property-boundary.png", import.meta.url);
+const demoFourNewInteriorPaths = [
+  "interior-dining-area.png",
+  "interior-hallway-layout.png",
+  "interior-second-bedroom.png",
+  "interior-bathroom-vanity-plumbing.png",
+].map((filename) => new URL(`../public/images/photo-examples/pennsylvania-brick-bungalow/${filename}`, import.meta.url));
 
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
   const [landing, demoTwo, demoThree] = await Promise.all([
@@ -72,7 +83,8 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /demo-four-gallery-thumbnails/);
   assert.match(demoFourSamples, /aria-pressed=\{selectedIndex === index\}/);
   assert.match(demoFourSamples, /className="demo-four-sample demo-four-video demo-four-street-view"><video/);
-  assert.match(demoFourSamples, /Full Property Video Tour/);
+  assert.match(demoFourSamples, /Exterior Video Walkthrough/);
+  assert.match(demoFourSamples, /Interior Video Walkthrough/);
   assert.match(demoFourSamples, /Living Room/);
   assert.match(demoFourSamples, /Kitchen/);
   assert.match(demoFourSamples, /Bathroom/);
@@ -91,13 +103,17 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /role="tablist"/);
   assert.match(demoFourSamples, /Exterior/);
   assert.match(demoFourSamples, /Street View/);
-  assert.match(demoFourSamples, /Video Tours/);
+  assert.match(demoFourSamples, /Video Walkthroughs/);
   assert.doesNotMatch(demoFourSamples, /"Videos"/);
   assert.match(demoFourSamples, /Interior/);
   assert.match(demoFourSamples, /Mechanicals/);
-  assert.match(demoFourSamples, /ai-pennsylvania-property-tour\.mp4/);
+  assert.match(demoFourSamples, /demo-4-exterior-walkthrough\.mp4/);
+  assert.match(demoFourSamples, /demo-4-interior-walkthrough\.mp4/);
+  assert.match(demoFourSamples, /demo-4-exterior-walkthrough-poster\.jpg/);
+  assert.match(demoFourSamples, /demo-4-interior-walkthrough-poster\.jpg/);
   assert.match(demoFourSamples, /ai-pennsylvania-street-360\.mp4/);
-  assert.doesNotMatch(demoFourSamples, /interior-sample\.mp4|Interior Video Tour/);
+  assert.doesNotMatch(demoFourSamples, /Video Tours|Full Property Video Tour|ai-pennsylvania-property-tour\.mp4/);
+  assert.equal((demoFourSamples.match(/<video /g) ?? []).length, 3);
   assert.match(styles, /\.photographer-demo-four/);
   assert.match(styles, /\.demo-four-review-avatar[^}]+background-size: 500% auto[^}]+background-position-y: center/);
   assert.doesNotMatch(styles, /\.demo-four-floating-submit/);
@@ -108,21 +124,25 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(styles, /\.demo-four-header nav a:first-child\s*\{\s*display:\s*none/);
   assert.match(styles, /\.demo-four-video\s*\{[^}]*display:\s*grid/);
   assert.match(styles, /\.demo-four-video\s*>\s*span\s*\{[^}]*position:\s*static/);
+  assert.match(styles, /\.demo-four-walkthrough-grid\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
   assert.deepEqual([...demoFourLanding.matchAll(/name: "([^"]+)"/g)].map((match) => match[1]), ["Michael Davis", "Emily Carter", "Daniel Wilson", "Jessica Miller", "Sarah Thompson"]);
 });
 
 test("demo 4 uses lightweight hero, review, and generated property media", async () => {
-  const [heroImage, avatarImage, video, streetVideo] = await Promise.all([
+  const [heroImage, avatarImage, exteriorWalkthrough, interiorWalkthrough, streetVideo] = await Promise.all([
     stat(demoFourHeroPath),
     stat(demoFourAvatarsPath),
-    stat(demoFourVideoPath),
+    stat(demoFourExteriorWalkthroughPath),
+    stat(demoFourInteriorWalkthroughPath),
     stat(streetViewVideoPath),
   ]);
 
   assert.ok(heroImage.size < 250_000, `hero image is ${heroImage.size} bytes`);
   assert.ok(avatarImage.size < 100_000, `avatar sprite is ${avatarImage.size} bytes`);
-  assert.ok(video.size > 1_000_000 && video.size < 40_000_000, `video is ${video.size} bytes`);
+  assert.ok(exteriorWalkthrough.size > 1_000_000 && exteriorWalkthrough.size < 40_000_000, `exterior walkthrough is ${exteriorWalkthrough.size} bytes`);
+  assert.ok(interiorWalkthrough.size > 1_000_000 && interiorWalkthrough.size < 40_000_000, `interior walkthrough is ${interiorWalkthrough.size} bytes`);
   assert.ok(streetVideo.size > 500_000 && streetVideo.size < 40_000_000, `street video is ${streetVideo.size} bytes`);
+  for (const posterPath of demoFourWalkthroughPosterPaths) assert.ok((await stat(posterPath)).size > 20_000);
 });
 
 test("Demo 4 organizes property photos in real-estate tour order", async () => {
@@ -144,10 +164,14 @@ test("Demo 4 organizes property photos in real-estate tour order", async () => {
   ]);
   assert.deepEqual([...interior.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
     "interior-living-room.png",
+    "interior-dining-area.png",
+    "interior-hallway-layout.png",
     "interior-kitchen.png",
     "mechanical-under-sink-plumbing.png",
     "interior-bedroom.png",
+    "interior-second-bedroom.png",
     "interior-bathroom.png",
+    "interior-bathroom-vanity-plumbing.png",
     "interior-laundry.png",
   ]);
   assert.deepEqual([...mechanicals.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
@@ -161,6 +185,9 @@ test("Demo 4 organizes property photos in real-estate tour order", async () => {
   ]);
   assert.doesNotMatch(mechanicals, /under-sink|ac-condenser|electric-meter|electrical-service/);
   assert.ok((await stat(demoFourFencePath)).size > 100_000);
+  for (const imagePath of demoFourNewInteriorPaths) assert.ok((await stat(imagePath)).size > 100_000);
+  assert.match(interior, /Kitchen under-sink plumbing/);
+  assert.match(interior, /Bathroom vanity plumbing/);
 });
 
 test("demo 3 uses its own enhanced local hero image", async () => {
