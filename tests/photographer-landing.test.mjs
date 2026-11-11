@@ -19,10 +19,8 @@ const walkthroughVideoPath = new URL("../public/videos/ai-pennsylvania-property-
 const demoThreeHeroPath = new URL("../public/images/photo-examples/equity-drive/demo-3-hero-enhanced.png", import.meta.url);
 const demoFourHeroPath = new URL("../public/images/photo-examples/demo-4-photographer-hero.webp", import.meta.url);
 const demoFourAvatarsPath = new URL("../public/images/review-avatars/demo-4-review-portraits.webp", import.meta.url);
-const demoFourExteriorWalkthroughPath = new URL("../public/videos/demo-4-exterior-guided-tour-v2.mp4", import.meta.url);
 const demoFourInteriorWalkthroughPath = new URL("../public/videos/demo-4-interior-supplied-tour-v3.mp4", import.meta.url);
 const demoFourWalkthroughPosterPaths = [
-  "demo-4-exterior-guided-tour-v2-poster.jpg",
   "demo-4-interior-supplied-tour-v3-poster.jpg",
 ].map((filename) => new URL(`../public/images/photo-examples/${filename}`, import.meta.url));
 const demoFourFencePath = new URL("../public/images/photo-examples/pennsylvania-brick-bungalow/exterior-fence-property-boundary.png", import.meta.url);
@@ -93,7 +91,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourSamples, /maps\.google\.com\/maps\?q=33\.900886,-84\.534285[^"']+output=svembed/);
   assert.match(demoFourSamples, /title="Interactive 360° Google Street View"/);
   assert.match(demoFourSamples, /allowFullScreen/);
-  assert.match(demoFourSamples, /Exterior Video Walkthrough/);
+  assert.doesNotMatch(demoFourSamples, /Exterior Video Walkthrough/);
   assert.match(demoFourSamples, /Interior Video Walkthrough/);
   assert.match(demoFourSamples, /Living Room/);
   assert.match(demoFourSamples, /Kitchen/);
@@ -117,12 +115,12 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(demoFourSamples, /"Videos"/);
   assert.match(demoFourSamples, /Interior/);
   assert.match(demoFourSamples, /Mechanicals/);
-  assert.match(demoFourSamples, /demo-4-exterior-guided-tour-v2\.mp4/);
+  assert.doesNotMatch(demoFourSamples, /demo-4-exterior-guided-tour-v2\.mp4/);
   assert.match(demoFourSamples, /demo-4-interior-supplied-tour-v3\.mp4/);
-  assert.match(demoFourSamples, /demo-4-exterior-guided-tour-v2-poster\.jpg/);
+  assert.doesNotMatch(demoFourSamples, /demo-4-exterior-guided-tour-v2-poster\.jpg/);
   assert.match(demoFourSamples, /demo-4-interior-supplied-tour-v3-poster\.jpg/);
   assert.doesNotMatch(demoFourSamples, /Video Tours|Full Property Video Tour|ai-pennsylvania-property-tour\.mp4/);
-  assert.equal((demoFourSamples.match(/<video /g) ?? []).length, 2);
+  assert.equal((demoFourSamples.match(/<video /g) ?? []).length, 1);
   assert.match(styles, /\.photographer-demo-four/);
   assert.match(styles, /\.demo-four-review-avatar[^}]+background-size: 500% auto[^}]+background-position-y: center/);
   assert.doesNotMatch(styles, /\.demo-four-floating-submit/);
@@ -133,21 +131,19 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(styles, /\.demo-four-header nav a:first-child\s*\{\s*display:\s*none/);
   assert.match(styles, /\.demo-four-video\s*\{[^}]*display:\s*grid/);
   assert.match(styles, /\.demo-four-video\s*>\s*span\s*\{[^}]*position:\s*static/);
-  assert.match(styles, /\.demo-four-walkthrough-grid\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(styles, /\.demo-four-walkthrough-grid\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*1fr/);
   assert.deepEqual([...demoFourLanding.matchAll(/name: "([^"]+)"/g)].map((match) => match[1]), ["Michael Davis", "Emily Carter", "Daniel Wilson", "Jessica Miller", "Sarah Thompson"]);
 });
 
 test("demo 4 uses lightweight hero, review, and generated property media", async () => {
-  const [heroImage, avatarImage, exteriorWalkthrough, interiorWalkthrough] = await Promise.all([
+  const [heroImage, avatarImage, interiorWalkthrough] = await Promise.all([
     stat(demoFourHeroPath),
     stat(demoFourAvatarsPath),
-    stat(demoFourExteriorWalkthroughPath),
     stat(demoFourInteriorWalkthroughPath),
   ]);
 
   assert.ok(heroImage.size < 250_000, `hero image is ${heroImage.size} bytes`);
   assert.ok(avatarImage.size < 100_000, `avatar sprite is ${avatarImage.size} bytes`);
-  assert.ok(exteriorWalkthrough.size > 1_000_000 && exteriorWalkthrough.size < 40_000_000, `exterior walkthrough is ${exteriorWalkthrough.size} bytes`);
   assert.ok(interiorWalkthrough.size > 1_000_000 && interiorWalkthrough.size < 40_000_000, `interior walkthrough is ${interiorWalkthrough.size} bytes`);
   for (const posterPath of demoFourWalkthroughPosterPaths) assert.ok((await stat(posterPath)).size > 20_000);
 });

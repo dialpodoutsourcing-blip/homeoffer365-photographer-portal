@@ -85,7 +85,6 @@ export function DemoFourSamples() {
         />
       </div>}
       {activeTab === "Video Walkthroughs" && <div className="demo-four-walkthrough-grid">
-        <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/demo-4-exterior-guided-tour-v2-poster.jpg" aria-label="Continuous exterior video walkthrough"><source src="/videos/demo-4-exterior-guided-tour-v2.mp4" type="video/mp4" />Your browser does not support embedded video.</video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Exterior Video Walkthrough</strong><small>One continuous walk around the home and property</small></span></article>
         <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/demo-4-interior-supplied-tour-v3-poster.jpg" aria-label="Continuous interior video walkthrough"><source src="/videos/demo-4-interior-supplied-tour-v3.mp4" type="video/mp4" />Your browser does not support embedded video.</video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Interior Video Walkthrough</strong><small>One continuous room-to-room walkthrough inside the home</small></span></article>
       </div>}
     </div>
