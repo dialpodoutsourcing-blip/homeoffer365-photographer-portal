@@ -21,6 +21,7 @@ const demoFourHeroPath = new URL("../public/images/photo-examples/demo-4-photogr
 const demoFourAvatarsPath = new URL("../public/images/review-avatars/demo-4-review-portraits.webp", import.meta.url);
 const demoFourVideoPath = new URL("../public/videos/ai-pennsylvania-property-tour.mp4", import.meta.url);
 const streetViewVideoPath = new URL("../public/videos/ai-pennsylvania-street-360.mp4", import.meta.url);
+const demoFourFencePath = new URL("../public/images/photo-examples/pennsylvania-brick-bungalow/exterior-fence-property-boundary.png", import.meta.url);
 
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
   const [landing, demoTwo, demoThree] = await Promise.all([
@@ -122,6 +123,44 @@ test("demo 4 uses lightweight hero, review, and generated property media", async
   assert.ok(avatarImage.size < 100_000, `avatar sprite is ${avatarImage.size} bytes`);
   assert.ok(video.size > 1_000_000 && video.size < 40_000_000, `video is ${video.size} bytes`);
   assert.ok(streetVideo.size > 500_000 && streetVideo.size < 40_000_000, `street video is ${streetVideo.size} bytes`);
+});
+
+test("Demo 4 organizes property photos in real-estate tour order", async () => {
+  const demoFourSamples = await readFile(demoFourSamplesPath, "utf8");
+  const exterior = demoFourSamples.match(/Exterior:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n\s*Interior:/)?.[1] ?? "";
+  const interior = demoFourSamples.match(/Interior:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n\s*Mechanicals:/)?.[1] ?? "";
+  const mechanicals = demoFourSamples.match(/Mechanicals:\s*\[([\s\S]*?)\r?\n\s*\],\r?\n};/)?.[1] ?? "";
+
+  assert.deepEqual([...exterior.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
+    "exterior-front.png",
+    "exterior-front-driveway.png",
+    "exterior-side-yard.png",
+    "exterior-rear-side.png",
+    "exterior-fence-property-boundary.png",
+    "exterior-rear.png",
+    "mechanical-ac-condenser.png",
+    "mechanical-electrical-service-context.png",
+    "mechanical-electric-meter-close.jpg",
+  ]);
+  assert.deepEqual([...interior.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
+    "interior-living-room.png",
+    "interior-kitchen.png",
+    "mechanical-under-sink-plumbing.png",
+    "interior-bedroom.png",
+    "interior-bathroom.png",
+    "interior-laundry.png",
+  ]);
+  assert.deepEqual([...mechanicals.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
+    "mechanical-basement-overview.png",
+    "mechanical-furnace-ductwork.png",
+    "mechanical-furnace-modern.png",
+    "mechanical-water-heater.png",
+    "mechanical-water-softener.png",
+    "mechanical-well-pump.png",
+    "mechanical-breaker-panel.png",
+  ]);
+  assert.doesNotMatch(mechanicals, /under-sink|ac-condenser|electric-meter|electrical-service/);
+  assert.ok((await stat(demoFourFencePath)).size > 100_000);
 });
 
 test("demo 3 uses its own enhanced local hero image", async () => {
