@@ -131,7 +131,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.doesNotMatch(styles, /\.demo-four-header nav a:first-child\s*\{\s*display:\s*none/);
   assert.match(styles, /\.demo-four-video\s*\{[^}]*display:\s*grid/);
   assert.match(styles, /\.demo-four-video\s*>\s*span\s*\{[^}]*position:\s*static/);
-  assert.match(styles, /\.demo-four-walkthrough-grid\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*1fr/);
+  assert.match(demoFourSamples, /className="demo-four-walkthrough-grid" style=\{\{ gridTemplateColumns: "1fr" \}\}/);
   assert.deepEqual([...demoFourLanding.matchAll(/name: "([^"]+)"/g)].map((match) => match[1]), ["Michael Davis", "Emily Carter", "Daniel Wilson", "Jessica Miller", "Sarah Thompson"]);
 });
 

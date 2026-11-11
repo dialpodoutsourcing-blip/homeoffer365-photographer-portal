@@ -84,7 +84,7 @@ export function DemoFourSamples() {
           style={{ width: "100%", height: "clamp(380px, 62vw, 680px)", display: "block", border: 0 }}
         />
       </div>}
-      {activeTab === "Video Walkthroughs" && <div className="demo-four-walkthrough-grid">
+      {activeTab === "Video Walkthroughs" && <div className="demo-four-walkthrough-grid" style={{ gridTemplateColumns: "1fr" }}>
         <article className="demo-four-sample demo-four-video"><video controls playsInline muted preload="metadata" poster="/images/photo-examples/demo-4-interior-supplied-tour-v3-poster.jpg" aria-label="Continuous interior video walkthrough"><source src="/videos/demo-4-interior-supplied-tour-v3.mp4" type="video/mp4" />Your browser does not support embedded video.</video><span><strong><Play size={13} fill="currentColor" aria-hidden="true" /> Interior Video Walkthrough</strong><small>One continuous room-to-room walkthrough inside the home</small></span></article>
       </div>}
     </div>
