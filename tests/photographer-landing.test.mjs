@@ -85,7 +85,7 @@ test("demo 4 is a separate compact page with reviews, requested samples, and sub
   assert.match(demoFourLanding, /View photos and video samples/i);
   assert.match(demoFourSamples, /galleryGroups/);
   assert.match(demoFourSamples, /Exterior:\s*\[[\s\S]*?exterior-front\.png[\s\S]*?exterior-front-driveway\.png[\s\S]*?exterior-side-yard\.png[\s\S]*?exterior-rear-side\.png[\s\S]*?exterior-rear\.png[\s\S]*?\]/);
-  assert.equal((demoFourSamples.match(/mechanical-[a-z-]+\.(?:png|jpg)/g) ?? []).length, 11);
+  assert.equal((demoFourSamples.match(/mechanical-[a-z-]+\.(?:png|jpg)/g) ?? []).length, 10);
   assert.match(demoFourSamples, /demo-four-gallery-main/);
   assert.match(demoFourSamples, /demo-four-gallery-thumbnails/);
   assert.match(demoFourSamples, /aria-pressed=\{selectedIndex === index\}/);
@@ -167,7 +167,6 @@ test("Demo 4 organizes property photos in real-estate tour order", async () => {
     "exterior-rear.png",
     "mechanical-ac-condenser.png",
     "mechanical-electrical-service-context.png",
-    "mechanical-electric-meter-close.jpg",
   ]);
   assert.deepEqual([...interior.matchAll(/pennsylvania-brick-bungalow\/([^"']+)/g)].map((match) => match[1]), [
     "interior-living-room.png",

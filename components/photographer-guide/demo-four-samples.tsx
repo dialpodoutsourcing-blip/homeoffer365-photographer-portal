@@ -18,7 +18,6 @@ const galleryGroups: Record<GalleryTab, readonly { label: string; src: string }[
     { label: "Rear elevation", src: "/images/photo-examples/pennsylvania-brick-bungalow/exterior-rear.png" },
     { label: "Exterior AC condenser", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-ac-condenser.png" },
     { label: "Exterior electrical service", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electrical-service-context.png" },
-    { label: "Exterior electrical meter", src: "/images/photo-examples/pennsylvania-brick-bungalow/mechanical-electric-meter-close.jpg" },
   ],
   Interior: [
     { label: "Living Room", src: "/images/photo-examples/pennsylvania-brick-bungalow/interior-living-room.png" },
