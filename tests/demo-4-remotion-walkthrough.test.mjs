@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import {
@@ -33,10 +33,24 @@ test("walkthrough manifest covers the approved nine-room route in 60 seconds", (
 });
 
 test("scene boundaries retain a fully covered frame during crossfades", () => {
-  const previousSceneOpacity = getSceneOpacity(200, false, false);
-  const nextSceneOpacity = getSceneOpacity(0, false, false);
+  for (let transitionFrame = 0; transitionFrame <= 28; transitionFrame += 1) {
+    const outgoing = getSceneOpacity(200 + transitionFrame, false, false);
+    const incoming = getSceneOpacity(transitionFrame, false, false);
+    const compositedCoverage = 1 - (1 - outgoing) * (1 - incoming);
 
-  assert.ok(previousSceneOpacity + nextSceneOpacity >= 1);
+    assert.equal(compositedCoverage, 1, `under-covered frame ${transitionFrame}`);
+  }
+});
+
+test("the Next app and Remotion use separate TypeScript projects", () => {
+  const appTsconfig = JSON.parse(readFileSync("tsconfig.json", "utf8"));
+  const remotionPackage = JSON.parse(
+    readFileSync("remotion/package.json", "utf8"),
+  );
+
+  assert.ok(appTsconfig.exclude.includes("remotion"));
+  assert.equal(remotionPackage.scripts.typecheck, "tsc --noEmit");
+  assert.ok(existsSync("remotion/tsconfig.json"));
 });
 
 test("walkthrough uses existing local images and no overlays", () => {

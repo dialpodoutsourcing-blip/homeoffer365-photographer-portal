@@ -7,21 +7,12 @@ export const TRANSITION_FRAMES = 28;
 
 const smoothstep = (value) => value * value * (3 - 2 * value);
 
-export const getSceneOpacity = (localFrame, isFirst, isLast) => {
+export const getSceneOpacity = (localFrame, isFirst, _isLast) => {
   const fadeIn = isFirst
     ? 1
     : smoothstep(Math.max(0, Math.min(1, localFrame / TRANSITION_FRAMES)));
-  const fadeOut = isLast
-    ? 1
-    : 1 -
-      smoothstep(
-        Math.max(
-          0,
-          Math.min(1, (localFrame - SCENE_FRAMES) / TRANSITION_FRAMES),
-        ),
-      );
 
-  return Math.min(fadeIn, fadeOut);
+  return fadeIn;
 };
 
 export const WALKTHROUGH_SCENES = [
