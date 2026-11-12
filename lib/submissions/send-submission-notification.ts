@@ -3,6 +3,7 @@ import type { SubmissionInput } from "./create-submission.ts";
 type NotificationOptions = {
   apiKey?: string;
   fetchImpl?: typeof fetch;
+  timeoutMs?: number;
 };
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
@@ -60,21 +61,32 @@ export async function sendSubmissionNotification(
   if (!apiKey) return "skipped";
 
   const submittedAt = new Date().toISOString();
-  const response = await (options.fetchImpl ?? fetch)(RESEND_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: FROM,
-      to: TO,
-      cc: CC,
-      subject: `New photographer submission — ${subjectAddress(submission.propertyAddress)}`,
-      html: buildHtml(submission, submittedAt),
-      text: buildText(submission, submittedAt),
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 5000);
+  let response: Response;
+  try {
+    response = await (options.fetchImpl ?? fetch)(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM,
+        to: TO,
+        cc: CC,
+        subject: `New photographer submission — ${subjectAddress(submission.propertyAddress)}`,
+        html: buildHtml(submission, submittedAt),
+        text: buildText(submission, submittedAt),
+      }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("Resend notification request timed out.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) throw new Error("Resend rejected the notification request.");
   return "sent";

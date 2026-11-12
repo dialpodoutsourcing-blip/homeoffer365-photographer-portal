@@ -4,6 +4,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 
 import { handleSubmission } from "../lib/submissions/route-handler.ts";
+import { sendSubmissionNotification } from "../lib/submissions/send-submission-notification.ts";
 
 const payload = {
   photographerName: "Ada Lovelace",
@@ -78,6 +79,34 @@ test("submission route succeeds and logs no private data when notification fails
   assert.deepEqual(await response.json(), { ok: true });
   assert.deepEqual(logs, ["Photographer submission notification failed."]);
   assert.doesNotMatch(logs.join(" "), /ada@example\.com|provider failure/);
+});
+
+test("submission route returns success after a stalled notification is aborted", async () => {
+  let aborted = false;
+  const logs = [];
+  const response = await handleSubmission(request(payload), {
+    env: { RESEND_API_KEY: "re_test_key" },
+    insert: async () => {},
+    notify: (submission, options) => sendSubmissionNotification(submission, {
+      ...options,
+      timeoutMs: 5,
+      fetchImpl: async (_url, init) => new Promise((_resolve, reject) => {
+        if (!init.signal) {
+          reject(new Error("missing abort signal"));
+          return;
+        }
+        init.signal.addEventListener("abort", () => {
+          aborted = true;
+          reject(new Error("request aborted"));
+        }, { once: true });
+      }),
+    }),
+    logError: (message) => logs.push(message),
+  });
+
+  assert.equal(response.status, 201);
+  assert.equal(aborted, true);
+  assert.deepEqual(logs, ["Photographer submission notification failed."]);
 });
 
 test("submission migration stores valid rows and grants clients no table privileges", async (t) => {
