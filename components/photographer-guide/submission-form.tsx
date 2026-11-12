@@ -1,12 +1,18 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Send } from "lucide-react";
+import { ArrowRight, Send } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { SubmissionConfirmation } from "./submission-confirmation";
 
 export function SubmissionForm({ showChecklist = true }: { showChecklist?: boolean } = {}) {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  function closeConfirmation() {
+    setSubmitted(false);
+    window.requestAnimationFrame(() => document.querySelector<HTMLInputElement>('input[name="photographerName"]')?.focus());
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,7 +53,7 @@ export function SubmissionForm({ showChecklist = true }: { showChecklist?: boole
     }
   }
 
-  if (submitted) return <section id="submit-photos" className="landing-submit landing-submission-confirmation" aria-labelledby="submission-confirmation-title"><span className="landing-submit-icon"><CheckCircle2 size={28} aria-hidden="true" /></span><div><span className="eyebrow">SUBMISSION RECEIVED</span><h2 id="submission-confirmation-title">We have received your photos.</h2><p>Our team will review your photos and video. You will receive an email with the review result.</p><small>Your submission was saved successfully.</small></div></section>;
+  if (submitted) return <SubmissionConfirmation onClose={closeConfirmation} />;
 
   return <section id="submit-photos" className="landing-submit landing-submission-form" aria-labelledby="submit-title">
     <div className="landing-submit-intro"><span className="landing-submit-icon"><Send size={26} aria-hidden="true" /></span><div><span className="eyebrow">FINISHED YOUR VISIT?</span><h2 id="submit-title">Submit your photos and video.</h2><p>Share your contact details, the property address, and the Google Drive folder containing your completed files.</p></div></div>

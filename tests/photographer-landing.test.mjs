@@ -14,6 +14,7 @@ const demoFourSamplesPath = new URL("../components/photographer-guide/demo-four-
 const stylesPath = new URL("../app/globals.css", import.meta.url);
 const photoSliderPath = new URL("../components/photographer-guide/photo-slider.tsx", import.meta.url);
 const submissionFormPath = new URL("../components/photographer-guide/submission-form.tsx", import.meta.url);
+const submissionConfirmationPath = new URL("../components/photographer-guide/submission-confirmation.tsx", import.meta.url);
 const guideContentPath = new URL("../content/photographer-guide.ts", import.meta.url);
 const walkthroughVideoPath = new URL("../public/videos/ai-pennsylvania-property-tour.mp4", import.meta.url);
 const demoThreeHeroPath = new URL("../public/images/photo-examples/equity-drive/demo-3-hero-enhanced.png", import.meta.url);
@@ -354,9 +355,10 @@ test("video samples use the generated Pennsylvania exterior and interior walkthr
 });
 
 test("landing submission posts to the API and shows honest pending and confirmation states", async () => {
-  const [landing, form] = await Promise.all([
+  const [landing, form, confirmation] = await Promise.all([
     readFile(landingPath, "utf8"),
     readFile(submissionFormPath, "utf8"),
+    readFile(submissionConfirmationPath, "utf8"),
   ]);
 
   assert.match(landing, /<SubmissionForm \/>/);
@@ -373,8 +375,9 @@ test("landing submission posts to the API and shows honest pending and confirmat
   assert.match(form, /href="#photo-checklist"/);
   assert.match(form, /id="submit-photos"/);
   assert.match(form, /type="submit"/);
-  assert.match(form, /We have received your photos/);
-  assert.match(form, /receive an email with the review result/);
+  assert.match(form, /<SubmissionConfirmation/);
+  assert.match(confirmation, /Successfully Submitted!/);
+  assert.match(confirmation, /submission has been received successfully/);
   assert.match(form, /fetch\("\/api\/submissions"/);
   assert.match(form, /setSubmitting\(true\)/);
   assert.match(form, /disabled=\{submitting\}/);

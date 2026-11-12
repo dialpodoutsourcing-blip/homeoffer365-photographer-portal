@@ -863,9 +863,63 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .landing-form-submit { display: flex; align-items: center; justify-content: flex-end; gap: 22px; margin-top: 21px; }
 .landing-form-submit small { color: #758b99; font-size: 10px; }
 .landing-form-submit button { border: 0; cursor: pointer; }
-.landing-submission-confirmation { grid-template-columns: auto 1fr; }
-.landing-submission-confirmation .landing-submit-icon { color: white; background: #2b9a6d; }
-.landing-submission-confirmation small { display: block; margin-top: 12px; color: #718794; font-size: 10px; }
+.submission-confirmation-overlay { position: fixed; z-index: 1000; inset: 0; overflow: hidden; height: 100dvh; color: #102d63; background: linear-gradient(180deg, #e6f7ff 0%, #f7fcff 31%, #fff 58%); font-family: Arial, Helvetica, sans-serif; }
+.submission-confirmation-close { position: absolute; z-index: 3; top: 16px; right: 16px; width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #d7e5f0; border-radius: 50%; color: #153d75; background: #fffffff2; box-shadow: 0 8px 24px #163e6f14; }
+.submission-confirmation-close:hover { background: #fff; box-shadow: 0 10px 28px #163e6f24; }
+.submission-confirmation-photo { position: absolute; z-index: 0; top: -25%; left: 50%; width: min(980px, 145vw); height: 58%; transform: translateX(-50%); border-radius: 0 0 48% 48%; background: linear-gradient(#cbf0ffc2, #def6ffe0), url('/images/photo-examples/pennsylvania-brick-bungalow/exterior-front.png') center 57% / cover no-repeat; box-shadow: inset 0 -24px 55px #ffffff57; }
+.submission-confirmation-content { position: relative; z-index: 1; width: min(100% - 36px, 680px); height: 100%; margin: 0 auto; padding: clamp(26px, 4.8vh, 52px) 0 clamp(16px, 2.5vh, 28px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.submission-success-mark { position: relative; flex: 0 0 auto; margin-bottom: clamp(8px, 1.5vh, 16px); }
+.submission-success-circle { width: clamp(70px, 9.5vh, 92px); height: clamp(70px, 9.5vh, 92px); display: grid; place-items: center; border: 6px solid white; border-radius: 50%; color: white; background: linear-gradient(145deg, #20c777, #08a457); box-shadow: 0 14px 34px #08a45740; animation: submission-check-pop .48s cubic-bezier(.2,.85,.3,1.25) both; }
+.submission-success-circle svg { width: 51%; }
+.submission-success-circle path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: submission-check-draw .42s ease-out .36s forwards; }
+.submission-success-ray { position: absolute; z-index: 2; width: 4px; height: 18px; border-radius: 3px; background: #10b861; opacity: 0; animation: submission-rays-in .28s ease-out .7s forwards; }
+.submission-success-ray-one { left: -24px; top: 14px; transform: rotate(-38deg); }
+.submission-success-ray-two { left: -32px; top: 41px; transform: rotate(-73deg); }
+.submission-success-ray-three { right: -24px; top: 14px; transform: rotate(38deg); }
+.submission-success-ray-four { right: -32px; top: 41px; transform: rotate(73deg); }
+.submission-confirmation-content h2 { margin: 0 0 clamp(12px, 1.8vh, 20px); color: #102d63; font-size: clamp(30px, 5.2vh, 48px); line-height: 1.03; letter-spacing: -.045em; }
+.submission-thank-you-card { width: 100%; display: grid; grid-template-columns: clamp(82px, 12.5vh, 118px) 1fr; align-items: center; gap: clamp(13px, 3vw, 23px); padding: clamp(11px, 1.7vh, 17px); text-align: left; border: 1px solid #d5e8f6; border-radius: 24px; background: linear-gradient(110deg, #eff8fff5, #f8fcfff5); box-shadow: 0 16px 44px #164c7e17; }
+.submission-thank-you-card img { width: clamp(82px, 12.5vh, 118px); height: clamp(92px, 14vh, 132px); border-radius: 17px; object-fit: cover; object-position: center top; }
+.submission-thank-you-card strong { display: block; color: #0875ce; font-family: "Segoe Script", "Brush Script MT", cursive; font-size: clamp(28px, 4.2vh, 42px); line-height: 1.05; }
+.submission-thank-you-card p { margin-top: 5px; color: #233452; font-size: clamp(13px, 1.75vh, 16px); line-height: 1.35; }
+.submission-appreciation { max-width: 570px; margin: clamp(12px, 2vh, 21px) auto clamp(10px, 1.7vh, 17px); color: #202c45; font-size: clamp(15px, 2vh, 19px); line-height: 1.35; }
+.submission-next-steps { width: 100%; text-align: left; }
+.submission-next-steps > div { display: grid; grid-template-columns: 42px 1fr; gap: 13px; align-items: center; }
+.submission-next-steps > div + div { margin-top: clamp(8px, 1.5vh, 15px); }
+.submission-next-steps svg { width: 36px; height: 36px; color: #0875ce; stroke-width: 1.8; }
+.submission-next-steps p { color: #202c45; font-size: clamp(14px, 1.9vh, 18px); line-height: 1.3; }
+.submission-next-steps strong { color: #0c438d; }
+.submission-confirmation-footer { width: 100%; margin-top: clamp(12px, 2vh, 21px); padding-top: clamp(9px, 1.5vh, 15px); display: flex; align-items: center; justify-content: center; color: #60738f; border-top: 1px solid #9fc9ea; text-align: left; }
+.submission-confirmation-house-mark { width: 44px; height: 44px; padding: 6px; display: grid; place-items: center; border: 3px solid #0aa4e8; border-radius: 50%; color: #0b8bd4; }
+.submission-confirmation-house-mark svg { width: 23px; fill: currentColor; }
+.submission-confirmation-footer > i { width: 1px; height: 43px; margin: 0 14px; background: #1686cf; }
+.submission-confirmation-footer > div { display: flex; flex-direction: column; line-height: 1.15; }
+.submission-confirmation-footer strong { color: #102d63; font-size: clamp(17px, 2vh, 20px); }
+.submission-confirmation-footer span { margin-top: 4px; font-size: clamp(12px, 1.5vh, 14px); }
+@keyframes submission-check-pop { from { opacity: 0; transform: scale(.55); } to { opacity: 1; transform: scale(1); } }
+@keyframes submission-check-draw { to { stroke-dashoffset: 0; } }
+@keyframes submission-rays-in { from { opacity: 0; scale: .5; } to { opacity: 1; scale: 1; } }
+@media (max-height: 720px) {
+  .submission-confirmation-content { width: min(100% - 28px, 620px); padding-block: 14px 10px; }
+  .submission-confirmation-photo { top: -31%; }
+  .submission-confirmation-content h2 { margin-bottom: 9px; }
+  .submission-appreciation { margin-block: 8px; }
+  .submission-confirmation-footer { margin-top: 8px; padding-top: 7px; }
+  .submission-confirmation-close { top: 9px; right: 9px; }
+}
+@media (max-height: 520px) {
+  .submission-confirmation-content { width: min(118%, 680px); height: calc(100% / .82); padding-block: 8px; transform: scale(.82); transform-origin: center; }
+  .submission-confirmation-photo { top: -37%; }
+}
+@media (max-height: 420px) {
+  .submission-confirmation-content { width: min(140%, 760px); height: calc(100% / .7); transform: scale(.7); }
+  .submission-confirmation-photo { top: -44%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .submission-success-circle, .submission-success-circle path, .submission-success-ray { animation: none; }
+  .submission-success-circle path { stroke-dashoffset: 0; }
+  .submission-success-ray { opacity: 1; }
+}
 .landing-site-footer { padding: 58px max(24px, calc((100vw - 1152px) / 2)) 22px; color: white; background: #0d2238; font-family: Figtree, Arial, sans-serif; }
 .landing-footer-grid { display: grid; grid-template-columns: 5fr 3fr 4fr; gap: 58px; }
 .landing-footer-about .brand-lockup { width: 170px; }
