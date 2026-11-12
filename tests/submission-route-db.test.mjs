@@ -24,22 +24,33 @@ function request(body) {
 
 test("submission route returns 201 only after a valid insert", async () => {
   const rows = [];
+  const events = [];
   const response = await handleSubmission(request(payload), {
-    insert: async (submission) => rows.push(submission),
+    env: { RESEND_API_KEY: "re_test_key" },
+    insert: async (submission) => { events.push("insert"); rows.push(submission); },
+    notify: async (submission, options) => {
+      events.push("notify");
+      assert.equal(submission.email, "ada@example.com");
+      assert.equal(options.apiKey, "re_test_key");
+      return "sent";
+    },
   });
 
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { ok: true });
   assert.equal(rows.length, 1);
   assert.equal(rows[0].email, "ada@example.com");
+  assert.deepEqual(events, ["insert", "notify"]);
 });
 
 test("submission route safely reports malformed, unconfigured, and failed requests", async () => {
-  const malformed = await handleSubmission(request("{"), { insert: async () => {} });
+  let notifications = 0;
+  const notify = async () => { notifications += 1; return "sent"; };
+  const malformed = await handleSubmission(request("{"), { insert: async () => {}, notify });
   assert.equal(malformed.status, 400);
   assert.deepEqual(await malformed.json(), { error: "Enter valid submission details." });
 
-  const invalid = await handleSubmission(request({ ...payload, email: "invalid" }), { insert: async () => {} });
+  const invalid = await handleSubmission(request({ ...payload, email: "invalid" }), { insert: async () => {}, notify });
   assert.equal(invalid.status, 400);
 
   const unconfigured = await handleSubmission(request(payload), { env: {} });
@@ -48,9 +59,25 @@ test("submission route safely reports malformed, unconfigured, and failed reques
 
   const failed = await handleSubmission(request(payload), {
     insert: async () => { throw new Error("private database detail"); },
+    notify,
   });
   assert.equal(failed.status, 500);
   assert.deepEqual(await failed.json(), { error: "We could not save your submission. Please try again." });
+  assert.equal(notifications, 0);
+});
+
+test("submission route succeeds and logs no private data when notification fails", async () => {
+  const logs = [];
+  const response = await handleSubmission(request(payload), {
+    insert: async () => {},
+    notify: async () => { throw new Error("provider failure for ada@example.com"); },
+    logError: (message) => logs.push(message),
+  });
+
+  assert.equal(response.status, 201);
+  assert.deepEqual(await response.json(), { ok: true });
+  assert.deepEqual(logs, ["Photographer submission notification failed."]);
+  assert.doesNotMatch(logs.join(" "), /ada@example\.com|provider failure/);
 });
 
 test("submission migration stores valid rows and grants clients no table privileges", async (t) => {

@@ -4,15 +4,19 @@ import {
   type InsertSubmission,
   type SubmissionInput,
 } from "./create-submission.ts";
+import { sendSubmissionNotification } from "./send-submission-notification.ts";
 
 type SubmissionEnvironment = {
   SUPABASE_URL?: string;
   SB_SECRET?: string;
+  RESEND_API_KEY?: string;
 };
 
 type SubmissionDependencies = {
   env?: SubmissionEnvironment;
   insert?: InsertSubmission;
+  notify?: typeof sendSubmissionNotification;
+  logError?: (message: string) => void;
 };
 
 const invalidResponse = () => Response.json(
@@ -56,6 +60,7 @@ export async function handleSubmission(
   const environment = dependencies.env ?? {
     SUPABASE_URL: process.env.SUPABASE_URL,
     SB_SECRET: process.env.SB_SECRET,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   };
   const insert = dependencies.insert ?? createSupabaseInsert(environment);
   if (!insert) return Response.json(
@@ -63,7 +68,18 @@ export async function handleSubmission(
     { status: 503 },
   );
 
-  const result = await createSubmission(payload, insert);
+  const notify = dependencies.notify ?? sendSubmissionNotification;
+  const logError = dependencies.logError ?? ((message: string) => console.error(message));
+  const insertAndNotify: InsertSubmission = async (submission) => {
+    await insert(submission);
+    try {
+      await notify(submission, { apiKey: environment.RESEND_API_KEY });
+    } catch {
+      logError("Photographer submission notification failed.");
+    }
+  };
+
+  const result = await createSubmission(payload, insertAndNotify);
   if (result.ok) return Response.json({ ok: true }, { status: 201 });
   if (result.reason === "invalid") return invalidResponse();
 
