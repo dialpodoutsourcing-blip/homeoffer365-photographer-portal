@@ -353,7 +353,7 @@ test("video samples use the generated Pennsylvania exterior and interior walkthr
   assert.ok(video.size > 1_000_000);
 });
 
-test("landing submission is a database-free form with an honest confirmation state", async () => {
+test("landing submission posts to the API and shows honest pending and confirmation states", async () => {
   const [landing, form] = await Promise.all([
     readFile(landingPath, "utf8"),
     readFile(submissionFormPath, "utf8"),
@@ -375,5 +375,11 @@ test("landing submission is a database-free form with an honest confirmation sta
   assert.match(form, /type="submit"/);
   assert.match(form, /We have received your photos/);
   assert.match(form, /receive an email with the review result/);
-  assert.doesNotMatch(form, /fetch\(|supabase|database/i);
+  assert.match(form, /fetch\("\/api\/submissions"/);
+  assert.match(form, /setSubmitting\(true\)/);
+  assert.match(form, /disabled=\{submitting\}/);
+  assert.match(form, /submitting \? "Submitting…" : "Submit Photos"/);
+  assert.match(form, /if \(!response\.ok\)/);
+  assert.match(form, /setSubmitted\(true\)/);
+  assert.doesNotMatch(form, /Demo only|nothing will be sent|Demo confirmation/i);
 });
