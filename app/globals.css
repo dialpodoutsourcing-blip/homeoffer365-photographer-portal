@@ -563,7 +563,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .guest-steps svg { color: #0088bd; margin-bottom: 14px; }
 .guest-steps strong { display: block; font-size: 14px; }
 .guest-steps p { font-size: 12px; }
-.guest-link-form { grid-template-columns: minmax(0,1fr) auto; align-items: end; padding-top: 22px; border-top: 1px solid var(--line); }
+.guest-link-form { grid-template-columns: minmax(220px,.75fr) minmax(300px,1.25fr) auto; align-items: end; padding-top: 22px; border-top: 1px solid var(--line); }
 .portal-workspace .guest-link-help { font-size: 12px; margin: 18px 0; }
 .guest-staff-access { display: flex; align-items: center; gap: 16px; border: 1px solid var(--line); border-radius: 12px; background: #eaf3f8; padding: 24px; }
 .guest-staff-access > svg { color: #3183a6; }
@@ -581,7 +581,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .staff-share-url > label { flex: 1 1 260px; min-width: 0; }
 .staff-link-manager > .portal-reference > svg { display: inline; vertical-align: middle; margin-right: 4px; }
 .guest-captcha { min-width: 0; max-width: 100%; margin: 12px 0; }
-@media (max-width: 800px) { .guest-steps { grid-template-columns: 1fr; } .guest-staff-access { flex-wrap: wrap; } .guest-staff-access > .button { margin-left: 0; } }
+@media (max-width: 800px) { .guest-steps { grid-template-columns: 1fr; } .guest-link-form { grid-template-columns: 1fr; } .guest-staff-access { flex-wrap: wrap; } .guest-staff-access > .button { margin-left: 0; } }
 @media (max-width: 600px) { .guest-link-form { grid-template-columns: 1fr; } .staff-link-manager { padding: 16px; } .staff-link-controls { align-items: stretch; flex-direction: column; } .staff-link-controls > .button { width: 100%; justify-content: center; } }
 .portal-workspace .visit-auth-note { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #667e8d; margin-top: 30px; }
 .visit-intro { background: radial-gradient(ellipse at top right, #145b7d, transparent 75%), #0b2236; color: #f5fbff; padding: clamp(24px, 4vw, 52px); }

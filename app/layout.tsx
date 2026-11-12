@@ -5,17 +5,17 @@ import { ChecklistProvider } from "@/components/photographer-guide/checklist-sta
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://photographer.homeoffer365.com"),
-  title: "Welcome to Home Offer 365 | Photographer Demo 4",
+  title: "Home Offer 365 | Photographer",
   description: "A concise photo, video, and submission guide for Home Offer 365 photographers.",
   openGraph: {
-    title: "Welcome to Home Offer 365 | Photographer Demo 4",
+    title: "Home Offer 365 | Photographer",
     description: "A concise photo, video, and submission guide for Home Offer 365 photographers.",
     type: "website",
     siteName: "Home Offer 365",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Welcome to Home Offer 365 | Photographer Demo 4",
+    title: "Home Offer 365 | Photographer",
     description: "A concise photo, video, and submission guide for Home Offer 365 photographers.",
   },
 };

@@ -5,8 +5,9 @@ import { readFile } from "node:fs/promises";
 const appFile = (name) => new URL(`../app/${name}`, import.meta.url);
 
 test("the homepage exposes branded social previews and standard app icons", async () => {
-  const [layout, openGraph, twitter, icon, appleIcon] = await Promise.all([
+  const [layout, homepage, openGraph, twitter, icon, appleIcon] = await Promise.all([
     readFile(appFile("layout.tsx"), "utf8"),
+    readFile(appFile("page.tsx"), "utf8"),
     readFile(appFile("opengraph-image.tsx"), "utf8"),
     readFile(appFile("twitter-image.tsx"), "utf8"),
     readFile(appFile("icon.tsx"), "utf8"),
@@ -14,7 +15,10 @@ test("the homepage exposes branded social previews and standard app icons", asyn
   ]);
 
   assert.match(layout, /metadataBase: new URL\("https:\/\/photographer\.homeoffer365\.com"\)/);
-  assert.match(layout, /title: "Welcome to Home Offer 365 \| Photographer Demo 4"/);
+  assert.match(layout, /title: "Home Offer 365 \| Photographer"/);
+  assert.doesNotMatch(layout, /Demo 4/);
+  assert.match(homepage, /title: "Home Offer 365 \| Photographer"/);
+  assert.doesNotMatch(homepage, /Demo 4/);
   assert.match(layout, /openGraph:\s*\{/);
   assert.match(layout, /twitter:\s*\{[\s\S]*?card: "summary_large_image"/);
 

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PhotographerDemoFour } from "@/components/photographer-guide/photographer-demo-four";
 
 export const metadata: Metadata = {
-  title: "Welcome to Home Offer 365 | Photographer Demo 4",
+  title: "Home Offer 365 | Photographer",
   description: "A concise photo, video, and submission guide for Home Offer 365 photographers.",
 };
 
