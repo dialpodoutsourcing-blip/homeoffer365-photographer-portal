@@ -3,19 +3,24 @@ import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import test, { before, after } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
+import { PHOTO_TYPES } from "../lib/demo-five/photo-workflow.ts";
 
 const migrationUrl = new URL("../supabase/migrations/202611130001_demo_five_photo_uploads.sql", import.meta.url);
+const sampleTypesMigrationUrl = new URL("../supabase/migrations/202611130002_demo_five_sample_photo_types.sql", import.meta.url);
 let db;
 let migration;
+let sampleTypesMigration;
 const bootstrap = `create role anon; create role authenticated; create role service_role;
   create schema storage;
   create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);`;
 
 before(async () => {
   migration = await readFile(migrationUrl, "utf8");
+  sampleTypesMigration = await readFile(sampleTypesMigrationUrl, "utf8");
   db = new PGlite();
   await db.exec(bootstrap);
   await db.exec(migration);
+  await db.exec(sampleTypesMigration);
 });
 after(async () => { await db?.close(); });
 
@@ -72,6 +77,21 @@ test("fresh schema has required columns, foreign keys, private image bucket, and
   assert.match(migration, /photographer-photos[\s\S]*false[\s\S]*image\/jpeg[\s\S]*image\/webp/i);
 });
 
+test("database classification accepts every selectable photo type and preserves legacy types", async () => {
+  const photographerId = randomUUID();
+  await db.query(`insert into photographers (id,name,email,phone,payment_method,payment_url)
+    values ($1,'Classification',$2,'123','Invoice','https://example.com/pay')`, [photographerId, `${photographerId}@example.com`]);
+  const legacy = { exterior: ["sides", "roof", "yard", "driveway", "outbuildings", "damage"], interior: ["bedroom", "under_sink", "damage"], mechanical: ["hvac", "electrical_panel", "plumbing"], condition: [] };
+  for (const category of Object.keys(PHOTO_TYPES)) {
+    for (const photoType of [...PHOTO_TYPES[category], ...legacy[category]]) {
+      await db.query(`insert into photographer_property_photos
+        (photographer_id,property_address,photo,photo_name,description,photo_category,photo_type,condition_status)
+        values ($1,'123 Example Street',$2,$3,'',$4,$5,'good_condition')`,
+      [photographerId, `${category}-${photoType}.webp`, photoType, category, photoType]);
+    }
+  }
+});
+
 test("migration preserves populated owner tables and can be applied again", async (t) => {
   const legacy = new PGlite();
   t.after(() => legacy.close());
@@ -86,7 +106,9 @@ test("migration preserves populated owner tables and can be applied again", asyn
     grant all on photographers,photographer_property_photos to anon,authenticated;
   `);
   await legacy.exec(migration);
+  await legacy.exec(sampleTypesMigration);
   await legacy.exec(migration);
+  await legacy.exec(sampleTypesMigration);
   assert.deepEqual((await legacy.query("select photo_name,photo_category,photo_type,condition_status from photographer_property_photos")).rows,
     [{ photo_name: "Legacy photo", photo_category: "other", photo_type: null, condition_status: null }]);
   assert.equal((await legacy.query("select has_table_privilege('anon','photographers','SELECT') as allowed")).rows[0].allowed, false);
