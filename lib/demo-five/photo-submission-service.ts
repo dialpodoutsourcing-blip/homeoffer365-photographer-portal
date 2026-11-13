@@ -1,4 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createHmac } from "node:crypto";
+import { isIP } from "node:net";
 import { validateSubmissionManifest, type PhotoMetadata, type PhotographerDetails, type PhotoSubmissionManifest, type NotApplicableSelection } from "./photo-workflow.ts";
 
 type ExpectedPath = { clientPhotoId: string; objectPath: string };
@@ -17,6 +19,7 @@ type UploadSession = {
 };
 type FinalizedSubmission = { submissionId: string; photographerId: string; photoCount: number };
 export type PhotoSubmissionOperations = {
+  consumeRateLimit(subjectHash: string, phase: "prepare" | "finalize", idempotencyKey: string | null): Promise<number>;
   findPhotographer(email: string): Promise<Photographer | null>;
   savePhotographer(details: PhotographerDetails, id: string | undefined, updatedAt: string): Promise<Photographer>;
   findSession(key: string): Promise<UploadSession | null>;
@@ -28,7 +31,7 @@ export type PhotoSubmissionOperations = {
   finalize(session: UploadSession, photos: UploadedPhoto[], notApplicable: NotApplicableSelection[]): Promise<FinalizedSubmission>;
 };
 export type PhotoSubmissionDependencies = {
-  env?: { SUPABASE_URL?: string; SB_SECRET?: string };
+  env?: { SUPABASE_URL?: string; SB_SECRET?: string; VERCEL?: string };
   operations?: PhotoSubmissionOperations;
   now?: () => number;
   uuid?: () => string;
@@ -82,6 +85,14 @@ function personRow(row: Record<string, unknown>): Photographer {
  * operations keep database/storage I/O outside validation and retry decisions. */
 export function createPhotoSubmissionOperations(client: SupabaseClient): PhotoSubmissionOperations {
   return {
+    async consumeRateLimit(subjectHash, phase, idempotencyKey) {
+      const { data, error } = await client.rpc("consume_photographer_upload_rate_limit", {
+        p_subject_hash: subjectHash, p_phase: phase, p_idempotency_key: idempotencyKey,
+      });
+      if (error) throw error;
+      if (!Number.isInteger(data) || data < 0 || data > 900) throw new Error("Invalid rate limit response.");
+      return data as number;
+    },
     async findPhotographer(email) {
       // The owner's existing rows may contain whitespace. Escape LIKE's literal
       // characters, page candidates, then enforce the index's trim/lower semantics.
@@ -307,6 +318,21 @@ async function handle(request: Request, phase: "prepare" | "finalize", dependenc
   try { input = await request.json(); }
   catch { return Response.json({ error: "Enter valid photo submission details.", code: "INVALID_INPUT" }, { status: 400 }); }
   try {
+    const retryAfter = await runService(dependencies, async deps => {
+      const env = dependencies.env ?? process.env;
+      if (!env.SB_SECRET) fail(503, "UNAVAILABLE", "Photo submissions are temporarily unavailable.");
+      // Only trust Vercel's platform-owned header when actually running there.
+      // Missing/malformed IPs and non-Vercel deployments share a bounded bucket;
+      // arbitrary forwarding headers never create attacker-controlled buckets.
+      const forwarded = env.VERCEL === "1" ? request.headers.get("x-vercel-forwarded-for")?.trim() ?? "" : "";
+      const family = forwarded.includes("%") ? 0 : isIP(forwarded);
+      const address = family === 6 ? new URL(`http://[${forwarded}]/`).hostname : family === 4 ? forwarded : "unknown-client";
+      const subjectHash = createHmac("sha256", env.SB_SECRET).update(`demo-five-rate-limit:${address}`).digest("hex");
+      const key = record(input) && typeof input.idempotencyKey === "string" && UUID.test(input.idempotencyKey) ? input.idempotencyKey.toLowerCase() : null;
+      return deps.operations.consumeRateLimit(subjectHash, phase, key);
+    });
+    if (retryAfter > 0) return Response.json({ error: "Too many photo submission attempts. Please wait and retry; your local photos are saved.", code: "RATE_LIMITED" },
+      { status: 429, headers: { "Cache-Control": "no-store", "Retry-After": String(retryAfter) } });
     const result = await (phase === "prepare" ? preparePhotoSubmission(input, dependencies) : finalizePhotoSubmission(input, dependencies));
     return Response.json(result, { status: phase === "prepare" ? 201 : 200, headers: { "Cache-Control": "no-store" } });
   } catch (error) {

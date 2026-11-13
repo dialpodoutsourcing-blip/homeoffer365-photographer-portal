@@ -29,6 +29,7 @@ function fixture() {
   const people = new Map(), sessions = new Map(), objects = new Map();
   const logs = [], deleted = [], signed = [], finalized = [];
   const operations = {
+    async consumeRateLimit() { return 0; },
     async findPhotographer(email) { return [...people.values()].find(p => p.email.trim().toLowerCase() === email) ?? null; },
     async savePhotographer(details, id, updatedAt) {
       const row = { ...details, id: id ?? randomUUID(), updatedAt }; people.set(row.id, row); return row;
@@ -58,7 +59,7 @@ function fixture() {
     },
   };
   return { people, sessions, objects, logs, deleted, signed, finalized, operations,
-    dependencies: { operations, now: () => now, uuid: randomUUID, logError: message => logs.push(message) } };
+    dependencies: { operations, env: { SB_SECRET: "test-only-secret" }, now: () => now, uuid: randomUUID, logError: message => logs.push(message) } };
 }
 const request = body => new Request("http://localhost/api/demo-five/submissions", { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body) });
 async function prepared(f = fixture(), input = manifest()) {

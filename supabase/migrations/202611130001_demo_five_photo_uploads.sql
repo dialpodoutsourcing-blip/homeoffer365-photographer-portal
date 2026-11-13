@@ -91,6 +91,61 @@ alter table public.photographer_upload_sessions enable row level security;
 revoke all on public.photographers, public.photographer_property_photos, public.photographer_upload_sessions from public, anon, authenticated;
 grant all on public.photographers, public.photographer_property_photos, public.photographer_upload_sessions to service_role;
 
+-- Durable counters across serverless instances. Only keyed HMAC digests of
+-- trusted client IPs reach this table; never raw IPs or submission details.
+create table if not exists public.photographer_upload_rate_limits (
+  subject_hash text not null check (subject_hash ~ '^[a-f0-9]{64}$'),
+  phase text not null check (phase in ('prepare', 'finalize')),
+  window_started_at timestamptz not null,
+  attempts integer not null check (attempts > 0),
+  primary key (subject_hash, phase)
+);
+create index if not exists photographer_upload_rate_limits_window on public.photographer_upload_rate_limits (window_started_at);
+alter table public.photographer_upload_rate_limits enable row level security;
+revoke all on public.photographer_upload_rate_limits from public, anon, authenticated;
+grant all on public.photographer_upload_rate_limits to service_role;
+
+create or replace function public.consume_photographer_upload_rate_limit(
+  p_subject_hash text, p_phase text, p_idempotency_key uuid default null
+) returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_now timestamptz := clock_timestamp();
+  v_window timestamptz;
+  v_attempts integer;
+  v_limit integer;
+begin
+  if p_subject_hash is null or p_subject_hash !~ '^[a-f0-9]{64}$' or p_phase is null or p_phase not in ('prepare', 'finalize') then
+    raise exception 'Invalid rate limit arguments';
+  end if;
+  -- An accepted session's opaque key is reusable without charging another
+  -- prepare attempt. Manifest equality/ownership are still checked by the API.
+  if p_phase = 'prepare' and p_idempotency_key is not null and exists (
+    select 1 from public.photographer_upload_sessions where idempotency_key = p_idempotency_key
+  ) then return 0; end if;
+
+  v_limit := case when p_phase = 'prepare' then 10 else 30 end;
+  delete from public.photographer_upload_rate_limits where window_started_at < v_now - interval '1 day';
+  -- ON CONFLICT serializes updates to this client's counter so separate
+  -- application instances cannot independently admit the same quota.
+  insert into public.photographer_upload_rate_limits as limits (subject_hash, phase, window_started_at, attempts)
+  values (p_subject_hash, p_phase, v_now, 1)
+  on conflict (subject_hash, phase) do update set
+    window_started_at = case when limits.window_started_at <= v_now - interval '15 minutes' then v_now else limits.window_started_at end,
+    attempts = case when limits.window_started_at <= v_now - interval '15 minutes' then 1 else least(limits.attempts + 1, v_limit + 1) end
+  returning window_started_at, attempts into v_window, v_attempts;
+  if v_attempts > v_limit then
+    return greatest(1, ceil(extract(epoch from v_window + interval '15 minutes' - v_now))::integer);
+  end if;
+  return 0;
+end;
+$$;
+revoke all on function public.consume_photographer_upload_rate_limit(text,text,uuid) from public, anon, authenticated;
+grant execute on function public.consume_photographer_upload_rate_limit(text,text,uuid) to service_role;
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('photographer-photos', 'photographer-photos', false, 10485760, array['image/jpeg', 'image/webp'])
 on conflict (id) do update set
