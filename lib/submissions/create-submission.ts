@@ -3,6 +3,8 @@ export type SubmissionInput = {
   email: string;
   phone: string;
   propertyAddress: string;
+  paymentMethod: "venmo" | "zelle";
+  paymentLink: string;
   driveLink: string;
   checklistComplete: boolean;
 };
@@ -18,6 +20,7 @@ const FIELD_LIMITS = {
   email: 320,
   phone: 50,
   propertyAddress: 500,
+  paymentLink: 2048,
   driveLink: 2048,
 } as const;
 
@@ -39,17 +42,28 @@ export function validateSubmission(value: unknown): SubmissionInput | null {
   const email = requiredString(record, "email");
   const phone = requiredString(record, "phone");
   const propertyAddress = requiredString(record, "propertyAddress");
+  const paymentLink = requiredString(record, "paymentLink");
   const driveLink = requiredString(record, "driveLink");
+  const paymentMethod = record.paymentMethod;
 
   if (
     !photographerName ||
     !email ||
     !phone ||
     !propertyAddress ||
+    !paymentLink ||
     !driveLink ||
+    !["venmo", "zelle"].includes(paymentMethod as string) ||
     typeof record.checklistComplete !== "boolean" ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   ) return null;
+
+  try {
+    const url = new URL(paymentLink);
+    if (url.protocol !== "https:" || url.username || url.password) return null;
+  } catch {
+    return null;
+  }
 
   try {
     const url = new URL(driveLink);
@@ -68,6 +82,8 @@ export function validateSubmission(value: unknown): SubmissionInput | null {
     email,
     phone,
     propertyAddress,
+    paymentMethod: paymentMethod as "venmo" | "zelle",
+    paymentLink,
     driveLink,
     checklistComplete: record.checklistComplete,
   };

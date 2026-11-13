@@ -11,6 +11,8 @@ const payload = {
   email: "ada@example.com",
   phone: "555-123-4567",
   propertyAddress: "123 Main Street, Philadelphia, PA 19103",
+  paymentMethod: "zelle",
+  paymentLink: "https://example.com/pay/ada",
   driveLink: "https://drive.google.com/drive/folders/example",
   checklistComplete: true,
 };
@@ -32,6 +34,7 @@ test("submission route returns 201 only after a valid insert", async () => {
     notify: async (submission, options) => {
       events.push("notify");
       assert.equal(submission.email, "ada@example.com");
+      assert.equal(submission.paymentMethod, "zelle");
       assert.equal(options.apiKey, "re_test_key");
       return "sent";
     },
@@ -118,14 +121,25 @@ test("submission migration stores valid rows and grants clients no table privile
     "utf8",
   );
   await db.exec(migration);
+  const paymentMigration = await readFile(
+    new URL("../supabase/migrations/202611130005_demo_four_payment_fields.sql", import.meta.url),
+    "utf8",
+  );
+  await db.exec(paymentMigration);
+  await db.exec(paymentMigration);
 
   await db.query(
     `insert into public.photographer_submissions
-      (photographer_name,email,phone,property_address,drive_link,checklist_complete)
-     values ($1,$2,$3,$4,$5,$6)`,
-    [payload.photographerName, payload.email, payload.phone, payload.propertyAddress, payload.driveLink, true],
+      (photographer_name,email,phone,property_address,payment_method,payment_link,drive_link,checklist_complete)
+     values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [payload.photographerName, payload.email, payload.phone, payload.propertyAddress, payload.paymentMethod, payload.paymentLink, payload.driveLink, true],
   );
-  assert.equal((await db.query("select count(*)::int as count from public.photographer_submissions")).rows[0].count, 1);
+  const saved = (await db.query("select payment_method,payment_link from public.photographer_submissions")).rows[0];
+  assert.deepEqual(saved, { payment_method: "zelle", payment_link: "https://example.com/pay/ada" });
+  await assert.rejects(
+    db.query("insert into public.photographer_submissions (photographer_name,email,phone,property_address,payment_method,payment_link,drive_link) values ('A','a@example.com','1','Address','cashapp','http://example.com','https://drive.google.com/folder')"),
+    /check constraint/,
+  );
   await assert.rejects(
     db.query("insert into public.photographer_submissions (photographer_name,email,phone,property_address,drive_link) values ('A','a@example.com','1','Address','https://example.com')"),
     /check constraint/,

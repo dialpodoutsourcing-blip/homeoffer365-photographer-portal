@@ -8,6 +8,8 @@ const submission = {
   email: "ada@example.com",
   phone: "+1 555-0100",
   propertyAddress: "123 Main & Market, Philadelphia, PA",
+  paymentMethod: "venmo",
+  paymentLink: "https://venmo.com/u/ada?txn=pay&note=Photos",
   driveLink: "https://drive.google.com/drive/folders/example?x=1&y=2",
   checklistComplete: true,
 };
@@ -34,10 +36,14 @@ test("sendSubmissionNotification posts a safe team email to Resend", async () =>
   assert.equal(payload.subject, "New photographer submission — 123 Main & Market, Philadelphia, PA");
   assert.match(payload.text, /Photographer: Ada <Lovelace>/);
   assert.match(payload.text, /Checklist complete: Yes/);
+  assert.match(payload.text, /Payment method: Venmo/);
+  assert.match(payload.text, /Payment link: https:\/\/venmo\.com\/u\/ada/);
   assert.match(payload.text, /Submitted at: /);
   assert.match(payload.html, /Ada &lt;Lovelace&gt;/);
   assert.match(payload.html, /123 Main &amp; Market/);
   assert.match(payload.html, /x=1&amp;y=2/);
+  assert.match(payload.html, /Venmo/);
+  assert.match(payload.html, /txn=pay&amp;note=Photos/);
   assert.doesNotMatch(payload.html, /Ada <Lovelace>/);
 });
 

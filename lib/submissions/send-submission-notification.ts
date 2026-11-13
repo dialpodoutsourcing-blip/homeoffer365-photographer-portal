@@ -25,6 +25,10 @@ function subjectAddress(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function paymentMethodLabel(value: SubmissionInput["paymentMethod"]): string {
+  return value === "venmo" ? "Venmo" : "Zelle";
+}
+
 function buildText(submission: SubmissionInput, submittedAt: string): string {
   return [
     "A photographer submission was saved.",
@@ -33,6 +37,8 @@ function buildText(submission: SubmissionInput, submittedAt: string): string {
     `Email: ${submission.email}`,
     `Phone: ${submission.phone}`,
     `Property: ${submission.propertyAddress}`,
+    `Payment method: ${paymentMethodLabel(submission.paymentMethod)}`,
+    `Payment link: ${submission.paymentLink}`,
     `Google Drive: ${submission.driveLink}`,
     `Checklist complete: ${submission.checklistComplete ? "Yes" : "No"}`,
     `Submitted at: ${submittedAt}`,
@@ -45,6 +51,8 @@ function buildHtml(submission: SubmissionInput, submittedAt: string): string {
     ["Email", submission.email],
     ["Phone", submission.phone],
     ["Property", submission.propertyAddress],
+    ["Payment method", paymentMethodLabel(submission.paymentMethod)],
+    ["Payment link", submission.paymentLink],
     ["Google Drive", submission.driveLink],
     ["Checklist complete", submission.checklistComplete ? "Yes" : "No"],
     ["Submitted at", submittedAt],

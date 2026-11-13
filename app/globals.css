@@ -850,9 +850,9 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .landing-submission-form form { padding-top: 26px; border-top: 1px solid #d8e6ee; }
 .landing-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
 .landing-form-grid label { display: grid; gap: 7px; color: #29475b; font-size: 11px; font-weight: 800; letter-spacing: .02em; }
-.landing-form-grid input { width: 100%; min-height: 48px; border: 1px solid #cbdde7; border-radius: 8px; padding: 11px 13px; color: #17364a; background: white; font-size: 14px; font-weight: 400; }
+.landing-form-grid :is(input, select) { width: 100%; min-height: 48px; border: 1px solid #cbdde7; border-radius: 8px; padding: 11px 13px; color: #17364a; background: white; font: inherit; font-size: 14px; font-weight: 400; }
 .landing-form-grid input::placeholder { color: #8ca0ad; }
-.landing-form-grid input:focus { border-color: #079bd7; outline: 3px solid #079bd71c; }
+.landing-form-grid :is(input, select):focus { border-color: #079bd7; outline: 3px solid #079bd71c; }
 .landing-address-field { position: relative; display: grid; gap: 7px; align-content: start; color: #29475b; font-size: 11px; font-weight: 800; letter-spacing: .02em; }
 .landing-address-field > small { color: #758b99; font-size: 10px; font-weight: 600; letter-spacing: 0; }
 .landing-address-options { position: absolute; z-index: 20; top: 76px; right: 0; left: 0; display: grid; overflow: hidden; border: 1px solid #b9d4e2; border-radius: 9px; background: white; box-shadow: 0 12px 28px #12374d24; }

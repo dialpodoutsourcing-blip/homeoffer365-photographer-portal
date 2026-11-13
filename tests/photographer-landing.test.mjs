@@ -391,6 +391,11 @@ test("landing submission posts to the API and shows honest pending and confirmat
   assert.match(form, /name="email"/);
   assert.match(form, /name="phone"/);
   assert.match(form, /name="propertyAddress"/);
+  assert.match(form, /<select[^>]*name="paymentMethod"[^>]*required/);
+  assert.match(form, /<option value="venmo">Venmo<\/option>/);
+  assert.match(form, /<option value="zelle">Zelle<\/option>/);
+  assert.equal((form.match(/<option value="(?:venmo|zelle)">/g) ?? []).length, 2);
+  assert.match(form, /name="paymentLink"[^>]*type="url"[^>]*required/);
   assert.match(form, /autoComplete="street-address"/);
   assert.match(form, /findAddressLocalities/);
   assert.match(form, /formatAddressLocality/);
@@ -412,8 +417,8 @@ test("landing submission posts to the API and shows honest pending and confirmat
   assert.match(form, /checklistGroups\.map/);
   assert.match(form, /name=\{`checklistGroup-\$\{groupIndex\}`\}/);
   assert.match(form, /checklistGroupsComplete\(formData\)/);
-  assert.equal([...form.matchAll(/data-lpignore="true"/g)].length, 5);
-  assert.equal([...form.matchAll(/suppressHydrationWarning/g)].length, 10);
+  assert.equal([...form.matchAll(/data-lpignore="true"/g)].length, 6);
+  assert.equal([...form.matchAll(/suppressHydrationWarning/g)].length, 12);
   assert.match(form, /<fieldset[^>]*className="landing-checklist-confirm"/);
   assert.match(form, /<legend>Confirm every checklist group<\/legend>/);
   assert.match(form, /type="checkbox"[^>]*required/);

@@ -39,6 +39,8 @@ function createSupabaseInsert(env: SubmissionEnvironment): InsertSubmission | nu
       email: submission.email,
       phone: submission.phone,
       property_address: submission.propertyAddress,
+      payment_method: submission.paymentMethod,
+      payment_link: submission.paymentLink,
       drive_link: submission.driveLink,
       checklist_complete: submission.checklistComplete,
     });

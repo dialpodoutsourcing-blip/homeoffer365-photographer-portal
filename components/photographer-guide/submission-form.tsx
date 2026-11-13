@@ -60,6 +60,14 @@ export function SubmissionForm() {
 
     const formData = new FormData(event.currentTarget);
     const driveLink = String(formData.get("driveLink") ?? "").trim();
+    const paymentLink = String(formData.get("paymentLink") ?? "").trim();
+    try {
+      const url = new URL(paymentLink);
+      if (url.protocol !== "https:" || url.username || url.password) throw new Error();
+    } catch {
+      setError("Enter a valid HTTPS payment link.");
+      return;
+    }
     try {
       const url = new URL(driveLink);
       if (url.protocol !== "https:" || !["drive.google.com", "docs.google.com"].includes(url.hostname) || url.username || url.password) throw new Error();
@@ -79,6 +87,8 @@ export function SubmissionForm() {
           email: String(formData.get("email") ?? ""),
           phone: String(formData.get("phone") ?? ""),
           propertyAddress: String(formData.get("propertyAddress") ?? ""),
+          paymentMethod: String(formData.get("paymentMethod") ?? ""),
+          paymentLink,
           driveLink,
           checklistComplete: checklistGroupsComplete(formData),
         }),
@@ -103,6 +113,8 @@ export function SubmissionForm() {
         <label suppressHydrationWarning>Photographer&apos;s Name<input suppressHydrationWarning data-lpignore="true" data-1p-ignore type="text" name="photographerName" autoComplete="name" maxLength={200} required disabled={submitting} /></label>
         <label suppressHydrationWarning>Email<input suppressHydrationWarning data-lpignore="true" data-1p-ignore type="email" name="email" autoComplete="email" maxLength={320} required disabled={submitting} /></label>
         <label suppressHydrationWarning>Phone<input suppressHydrationWarning data-lpignore="true" data-1p-ignore type="tel" name="phone" autoComplete="tel" maxLength={50} required disabled={submitting} /></label>
+        <label>Payment Method<select name="paymentMethod" required disabled={submitting} defaultValue=""><option value="" disabled>Select payment method</option><option value="venmo">Venmo</option><option value="zelle">Zelle</option></select></label>
+        <label suppressHydrationWarning>Payment Link<input suppressHydrationWarning data-lpignore="true" data-1p-ignore name="paymentLink" type="url" inputMode="url" autoComplete="url" placeholder="https://..." maxLength={2048} required disabled={submitting} /></label>
         <div className="landing-address-field">
           <label htmlFor="property-address" suppressHydrationWarning>Property Address</label>
           <input id="property-address" suppressHydrationWarning data-lpignore="true" data-1p-ignore type="text" name="propertyAddress" autoComplete="street-address" maxLength={500} required disabled={submitting} value={address} role="combobox" aria-autocomplete="list" aria-expanded={suggestionsOpen && addressSuggestions.length > 0} aria-controls={addressListId} aria-activedescendant={suggestionsOpen && activeSuggestion >= 0 ? `${addressListId}-${activeSuggestion}` : undefined} onChange={(event) => { setAddress(event.target.value); setSuggestionsOpen(true); setActiveSuggestion(-1); }} onFocus={() => setSuggestionsOpen(addressSuggestions.length > 0)} onBlur={closeSuggestions} onKeyDown={handleAddressKeyDown} />
