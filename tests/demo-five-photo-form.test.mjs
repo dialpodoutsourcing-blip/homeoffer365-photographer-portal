@@ -141,7 +141,9 @@ test("wizard validates each visible step and preserves contact and payment value
     await form.next(); assert.match(form.html(), /role="alert"/); assert.match(form.html(), /Step 1 of 3/);
     form.field("photographerName", "Ada"); form.field("email", "ada@example.com"); form.field("phone", "555-555-5555");
     html = await form.next(); assert.match(html, /Step 2 of 3/);
-    assert.match(html, /name="paymentMethod"/); assert.match(html, /name="paymentUrl"/);
+    assert.match(html, /<select[^>]*name="paymentMethod"[^>]*required=""/); assert.match(html, /name="paymentUrl"/);
+    for (const option of ["ACH / Bank Transfer", "Zelle", "Venmo", "PayPal", "Cash App", "Check", "Other"])
+      assert.match(html, new RegExp(`<option value="${option.replace("/", "\\/")}">${option.replace("/", "\\/")}</option>`));
     assert.doesNotMatch(html, /name="photographerName"|name="email"|name="phone"|name="propertyAddress"|type="file"/);
     assert.match(html, />Back<\/button>/); assert.match(html, />Next<\/button>/);
     await form.next(); assert.match(form.html(), /Step 2 of 3/); assert.match(form.html(), /role="alert"/);
