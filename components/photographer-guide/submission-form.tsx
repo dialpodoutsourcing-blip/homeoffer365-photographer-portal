@@ -2,12 +2,14 @@
 
 import { ArrowRight, Send } from "lucide-react";
 import { useState, type FormEvent, type KeyboardEvent } from "react";
+import { checklistGroups } from "@/content/photographer-guide";
 import { applyAddressLocality, findAddressLocalities, formatAddressLocality, type AddressLocality } from "@/lib/address-suggestions";
+import { checklistGroupsComplete } from "@/lib/submissions/checklist-groups";
 import { SubmissionConfirmation } from "./submission-confirmation";
 
 const addressListId = "property-address-suggestions";
 
-export function SubmissionForm({ showChecklist = true }: { showChecklist?: boolean } = {}) {
+export function SubmissionForm() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -78,7 +80,7 @@ export function SubmissionForm({ showChecklist = true }: { showChecklist?: boole
           phone: String(formData.get("phone") ?? ""),
           propertyAddress: String(formData.get("propertyAddress") ?? ""),
           driveLink,
-          checklistComplete: formData.get("checklistComplete") === "on",
+          checklistComplete: checklistGroupsComplete(formData),
         }),
       });
       const result = await response.json().catch(() => null) as { error?: string } | null;
@@ -111,7 +113,16 @@ export function SubmissionForm({ showChecklist = true }: { showChecklist?: boole
         </div>
         <label className="landing-drive-field" suppressHydrationWarning>Google Drive Link<input suppressHydrationWarning data-lpignore="true" data-1p-ignore type="url" name="driveLink" inputMode="url" autoComplete="url" placeholder="https://drive.google.com/drive/folders/..." maxLength={2048} required disabled={submitting} /></label>
       </div>
-      {showChecklist && <div className="landing-checklist-confirm"><input id="checklist-complete" type="checkbox" name="checklistComplete" required disabled={submitting} /><label htmlFor="checklist-complete">Did you complete the photo checklist?</label><a href="#photo-checklist">Review the checklist</a></div>}
+      <fieldset className="landing-checklist-confirm" disabled={submitting}>
+        <legend>Confirm every checklist group</legend>
+        <p>Review every listed item, then confirm each group before submitting.</p>
+        <div className="landing-checklist-confirm-grid">
+          {checklistGroups.map((group, groupIndex) => <section className="landing-checklist-group" key={group.title}>
+            <label htmlFor={`checklist-group-${groupIndex}`}><input id={`checklist-group-${groupIndex}`} type="checkbox" name={`checklistGroup-${groupIndex}`} required /><span><strong>{group.title}</strong><small>All items in this group are complete</small></span></label>
+            <ul className="landing-checklist-group-items">{group.items.map((item) => <li key={item}>{item}</li>)}</ul>
+          </section>)}
+        </div>
+      </fieldset>
       {error && <p className="landing-form-error" role="alert">{error}</p>}
       <div className="landing-form-submit"><small>Your details are sent securely to Home Offer 365.</small><button className="button primary" type="submit" disabled={submitting}>{submitting ? "Submitting…" : "Submit Photos"} <ArrowRight size={17} aria-hidden="true" /></button></div>
     </form>

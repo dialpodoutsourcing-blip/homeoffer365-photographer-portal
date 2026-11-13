@@ -84,7 +84,7 @@ export function PhotographerDemoFour() {
 
       <section className="demo-four-form" aria-labelledby="demo-four-form-title">
         <div className="demo-four-form-heading"><span className="eyebrow">SUBMIT PHOTOS/VIDEOS</span><h2 id="demo-four-form-title">Photographer&apos;s Info</h2></div>
-        <SubmissionForm showChecklist={false} />
+        <SubmissionForm />
       </section>
     </div>
   );
