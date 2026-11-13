@@ -853,6 +853,13 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .landing-form-grid input { width: 100%; min-height: 48px; border: 1px solid #cbdde7; border-radius: 8px; padding: 11px 13px; color: #17364a; background: white; font-size: 14px; font-weight: 400; }
 .landing-form-grid input::placeholder { color: #8ca0ad; }
 .landing-form-grid input:focus { border-color: #079bd7; outline: 3px solid #079bd71c; }
+.landing-address-field { position: relative; display: grid; gap: 7px; align-content: start; color: #29475b; font-size: 11px; font-weight: 800; letter-spacing: .02em; }
+.landing-address-field > small { color: #758b99; font-size: 10px; font-weight: 600; letter-spacing: 0; }
+.landing-address-options { position: absolute; z-index: 20; top: 76px; right: 0; left: 0; display: grid; overflow: hidden; border: 1px solid #b9d4e2; border-radius: 9px; background: white; box-shadow: 0 12px 28px #12374d24; }
+.landing-address-option { min-height: 42px; padding: 9px 12px; border: 0; border-bottom: 1px solid #e2edf2; color: #17364a; background: white; font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer; }
+.landing-address-option:last-child { border-bottom: 0; }
+.landing-address-option:hover, .landing-address-option.is-active { color: #075d87; background: #eaf7fc; }
+@media (max-width: 760px) { .landing-address-options { right: 0; left: 0; max-width: 100%; } }
 .landing-drive-field { grid-column: 1 / -1; }
 .landing-form-error { margin-top: 12px; color: #b42318; font-size: 12px; font-weight: 700; }
 .landing-checklist-confirm { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 18px; padding: 14px 16px; border: 1px solid #cfe0e9; border-radius: 8px; background: #f7fbfd; }

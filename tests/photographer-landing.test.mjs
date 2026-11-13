@@ -355,10 +355,11 @@ test("video samples use the generated Pennsylvania exterior and interior walkthr
 });
 
 test("landing submission posts to the API and shows honest pending and confirmation states", async () => {
-  const [landing, form, confirmation] = await Promise.all([
+  const [landing, form, confirmation, styles] = await Promise.all([
     readFile(landingPath, "utf8"),
     readFile(submissionFormPath, "utf8"),
     readFile(submissionConfirmationPath, "utf8"),
+    readFile(stylesPath, "utf8"),
   ]);
 
   assert.match(landing, /<SubmissionForm \/>/);
@@ -366,6 +367,20 @@ test("landing submission posts to the API and shows honest pending and confirmat
   assert.match(form, /name="email"/);
   assert.match(form, /name="phone"/);
   assert.match(form, /name="propertyAddress"/);
+  assert.match(form, /autoComplete="street-address"/);
+  assert.match(form, /findAddressLocalities/);
+  assert.match(form, /formatAddressLocality/);
+  assert.match(form, /applyAddressLocality/);
+  assert.match(form, /role="combobox"/);
+  assert.match(form, /aria-autocomplete="list"/);
+  assert.match(form, /aria-expanded=/);
+  assert.match(form, /aria-controls=/);
+  assert.match(form, /role="listbox"/);
+  assert.match(form, /role="option"/);
+  assert.match(form, /event\.key === "ArrowDown"/);
+  assert.match(form, /event\.key === "ArrowUp"/);
+  assert.match(form, /event\.key === "Enter"/);
+  assert.match(form, /event\.key === "Escape"/);
   assert.match(form, /name="driveLink"/);
   assert.match(form, /name="checklistComplete"/);
   assert.equal([...form.matchAll(/data-lpignore="true"/g)].length, 5);
@@ -384,5 +399,9 @@ test("landing submission posts to the API and shows honest pending and confirmat
   assert.match(form, /submitting \? "Submitting…" : "Submit Photos"/);
   assert.match(form, /if \(!response\.ok\)/);
   assert.match(form, /setSubmitted\(true\)/);
+  assert.match(styles, /\.landing-address-field/);
+  assert.match(styles, /\.landing-address-options/);
+  assert.match(styles, /\.landing-address-option\.is-active/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.landing-address-options/);
   assert.doesNotMatch(form, /Demo only|nothing will be sent|Demo confirmation/i);
 });
