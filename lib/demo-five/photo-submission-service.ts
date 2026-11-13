@@ -26,6 +26,7 @@ export type PhotoSubmissionOperations = {
   createSession(session: UploadSession): Promise<UploadSession>;
   signUpload(path: string): Promise<string>;
   inspectObject(path: string): Promise<{ mimeType: string | undefined; byteSize: number | undefined } | null>;
+  readObjectPrefix(path: string, length: number): Promise<Uint8Array>;
   markTerminal(id: string, key: string, status: "failed" | "expired"): Promise<boolean>;
   removeObjects(paths: string[]): Promise<void>;
   finalize(session: UploadSession, photos: UploadedPhoto[], notApplicable: NotApplicableSelection[]): Promise<FinalizedSubmission>;
@@ -83,7 +84,7 @@ function personRow(row: Record<string, unknown>): Photographer {
 
 /** Supabase is used only on the server with a service-role key. The injectable
  * operations keep database/storage I/O outside validation and retry decisions. */
-export function createPhotoSubmissionOperations(client: SupabaseClient): PhotoSubmissionOperations {
+export function createPhotoSubmissionOperations(client: SupabaseClient, fetcher: typeof fetch = fetch): PhotoSubmissionOperations {
   return {
     async consumeRateLimit(subjectHash, phase, idempotencyKey) {
       const { data, error } = await client.rpc("consume_photographer_upload_rate_limit", {
@@ -141,6 +142,31 @@ export function createPhotoSubmissionOperations(client: SupabaseClient): PhotoSu
       }
       return { mimeType: data.contentType, byteSize: data.size };
     },
+    async readObjectPrefix(path, length) {
+      if (!Number.isInteger(length) || length < 1 || length > 12) throw new Error("Invalid image prefix length.");
+      const { data, error } = await client.storage.from(BUCKET).createSignedUrl(path, 60);
+      if (error) throw error;
+      const response = await fetcher(data.signedUrl, {
+        headers: { Range: `bytes=0-${length - 1}` }, cache: "no-store", signal: AbortSignal.timeout(10000),
+      });
+      if (!response.ok || !response.body) {
+        await response.body?.cancel();
+        throw new Error("Could not verify image content.");
+      }
+      // Some proxies ignore Range. Never call blob()/arrayBuffer() on the
+      // response: copy only the requested prefix, then cancel the body stream.
+      const reader = response.body.getReader(), prefix = new Uint8Array(length);
+      let received = 0;
+      try {
+        while (received < length) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          const count = Math.min(chunk.value.length, length - received);
+          prefix.set(chunk.value.subarray(0, count), received); received += count;
+        }
+      } finally { await reader.cancel(); reader.releaseLock(); }
+      return prefix.subarray(0, received);
+    },
     async markTerminal(id, key, status) {
       // This conditional UPDATE locks the same session row as the finalize RPC.
       // A concurrent successful finalize therefore prevents cleanup of its files.
@@ -176,24 +202,46 @@ function resolveDependencies(dependencies: PhotoSubmissionDependencies) {
     logError: dependencies.logError ?? ((message: string) => console.error(message)) };
 }
 type ResolvedDependencies = ReturnType<typeof resolveDependencies>;
+function imageMimeType(prefix: Uint8Array): string | undefined {
+  if (prefix.length >= 3 && prefix[0] === 255 && prefix[1] === 216 && prefix[2] === 255) return "image/jpeg";
+  if ([137, 80, 78, 71, 13, 10, 26, 10].every((byte, i) => prefix[i] === byte)) return "image/png";
+  if ([82, 73, 70, 70].every((byte, i) => prefix[i] === byte)
+    && [87, 69, 66, 80].every((byte, i) => prefix[i + 8] === byte)) return "image/webp";
+}
+async function matchesPhoto(object: { mimeType: string | undefined; byteSize: number | undefined }, photo: PhotoMetadata, path: string, deps: ResolvedDependencies) {
+  return object.mimeType === photo.mimeType && object.byteSize === photo.byteSize
+    && imageMimeType(await deps.operations.readObjectPrefix(path, 12)) === photo.mimeType;
+}
 async function cleanup(session: UploadSession, status: "failed" | "expired", deps: ResolvedDependencies) {
+  if (!await deps.operations.markTerminal(session.id, session.idempotencyKey, status)) {
+    const current = await deps.operations.findSession(session.idempotencyKey);
+    if (!current || current.id !== session.id || current.status === "prepared") {
+      fail(503, "RETRYABLE_FAILURE", "The submission state could not be confirmed. Retry this submission.");
+    }
+    return current;
+  }
   try {
-    if (!await deps.operations.markTerminal(session.id, session.idempotencyKey, status)) return;
     const prefix = `${session.photographerId}/${session.id}/`;
     const paths = session.expectedPaths.map(p => p.objectPath);
     if (paths.some(path => !path.startsWith(prefix) || path.slice(prefix.length).includes("/") || path.includes(".."))) {
-      deps.logError("Photo submission cleanup rejected invalid stored paths."); return;
+      deps.logError("Photo submission cleanup rejected invalid stored paths.");
+    } else {
+      await deps.operations.removeObjects(paths);
     }
-    await deps.operations.removeObjects(paths);
   } catch { deps.logError("Photo submission cleanup failed."); }
+  return { ...session, status };
 }
 async function checkSession(session: UploadSession, deps: ResolvedDependencies) {
-  if (session.status === "finalized") return;
-  if (session.status === "expired" || Date.parse(session.expiresAt) <= deps.now()) {
-    await cleanup(session, "expired", deps);
+  if (session.status === "finalized") return session;
+  if (session.status === "prepared" && Date.parse(session.expiresAt) <= deps.now()) {
+    session = await cleanup(session, "expired", deps);
+    if (session.status === "finalized") return session;
+  }
+  if (session.status === "expired") {
     fail(410, "SESSION_EXPIRED", "The upload session expired. Prepare a new submission to try again.");
   }
   if (session.status !== "prepared") fail(409, "SESSION_FAILED", "This upload session cannot be completed. Prepare a new submission.");
+  return session;
 }
 async function runService<T>(dependencies: PhotoSubmissionDependencies, work: (deps: ResolvedDependencies) => Promise<T>): Promise<T> {
   try { return await work(resolveDependencies(dependencies)); }
@@ -217,9 +265,9 @@ export async function preparePhotoSubmission(input: unknown, dependencies: Photo
       if (!s.preparedManifest || comparable(canonicalManifest(s.preparedManifest)) !== comparable(manifest)) {
         fail(409, "MANIFEST_CHANGED", "This idempotency key belongs to a different photo manifest.");
       }
-      await checkSession(s, deps);
+      return checkSession(s, deps);
     };
-    if (session) await validateRetry(session);
+    if (session) session = await validateRetry(session);
     let photographer = await deps.operations.findPhotographer(manifest.photographer.email);
     try {
       photographer = await deps.operations.savePhotographer(manifest.photographer, photographer?.id, new Date(deps.now()).toISOString());
@@ -244,7 +292,7 @@ export async function preparePhotoSubmission(input: unknown, dependencies: Photo
         session = await deps.operations.findSession(key);
         if (!session) throw error;
         reusedSession = true;
-        await validateRetry(session);
+        session = await validateRetry(session);
       }
     }
     // Existing objects cannot receive a new non-upsert signed token. Verify
@@ -260,9 +308,9 @@ export async function preparePhotoSubmission(input: unknown, dependencies: Photo
       const object = reusedSession ? await deps.operations.inspectObject(path.objectPath) : null;
       if (object) {
         const photo = metadata.get(path.clientPhotoId);
-        if (!photo || object.mimeType !== photo.mimeType || object.byteSize !== photo.byteSize) {
-          await cleanup(session, "failed", deps);
-          fail(422, "OBJECT_MISMATCH", "An uploaded photo does not match its prepared type or size. Prepare a new submission.");
+        if (!photo || !await matchesPhoto(object, photo, path.objectPath, deps)) {
+          session = await cleanup(session, "failed", deps);
+          if (session.status !== "finalized") fail(422, "OBJECT_MISMATCH", "An uploaded photo does not match its prepared type or size. Prepare a new submission.");
         }
         uploads.push({ ...path, alreadyUploaded: true, signedToken: null });
       } else {
@@ -277,7 +325,7 @@ export async function finalizePhotoSubmission(input: unknown, dependencies: Phot
   return runService(dependencies, async deps => {
     if (!record(input)) fail(400, "INVALID_INPUT", "An uploaded photo manifest is required.");
     const sessionId = uuidInput(input.sessionId), key = uuidInput(input.idempotencyKey);
-    const session = await deps.operations.findSession(key);
+    let session = await deps.operations.findSession(key);
     if (!session || session.id !== sessionId) fail(404, "SESSION_NOT_FOUND", "Upload session not found.");
     if (!session.preparedManifest) fail(409, "SESSION_FAILED", "Prepare a new submission.");
     const manifest = canonicalManifest({ ...session.preparedManifest, photos: input.photos, notApplicable: input.notApplicable });
@@ -291,13 +339,14 @@ export async function finalizePhotoSubmission(input: unknown, dependencies: Phot
       fail(409, "PATH_MISMATCH", "Uploaded paths do not match the upload session.");
     }
     const photos = manifest.photos.map(p => ({ ...p, objectPath: expected.get(p.clientPhotoId)! }));
-    await checkSession(session, deps);
+    session = await checkSession(session, deps);
     if (session.status !== "finalized") {
       for (const photo of photos) {
         const object = await deps.operations.inspectObject(photo.objectPath);
         if (!object) fail(409, "UPLOAD_INCOMPLETE", "Some photos have not uploaded yet. Retry the missing uploads.");
-        if (object.mimeType !== photo.mimeType || object.byteSize !== photo.byteSize) {
-          await cleanup(session, "failed", deps);
+        if (!await matchesPhoto(object, photo, photo.objectPath, deps)) {
+          session = await cleanup(session, "failed", deps);
+          if (session.status === "finalized") break;
           fail(422, "OBJECT_MISMATCH", "An uploaded photo does not match its prepared type or size. Prepare a new submission.");
         }
       }
@@ -305,7 +354,8 @@ export async function finalizePhotoSubmission(input: unknown, dependencies: Phot
     try { return await deps.operations.finalize(session, photos, manifest.notApplicable); }
     catch (error) {
       if (["P0001", "23514", "23503", "22007", "22008", "22P02"].includes(errorCode(error) ?? "")) {
-        await cleanup(session, "failed", deps);
+        session = await cleanup(session, "failed", deps);
+        if (session.status === "finalized") return deps.operations.finalize(session, photos, manifest.notApplicable);
         fail(422, "FINALIZE_REJECTED", "The photo submission could not be finalized. Prepare a new submission.");
       }
       throw error;

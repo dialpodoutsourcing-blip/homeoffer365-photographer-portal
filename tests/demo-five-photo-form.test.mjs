@@ -34,16 +34,22 @@ function server(d, { finalizeFails = false, alreadyUploaded = [] } = {}) {
     return finalizeFails ? Response.json({ error: "Try again", code: "RETRYABLE_FAILURE" }, { status: 503 }) : Response.json({ submissionId: "submission-1", photographerId: "owner", photoCount: 10 });
   } };
 }
+async function savedStore(value) {
+  const store = createIndexedDbPhotoDraftStore(new IDBFactory());
+  await store.save(value);
+  return store;
+}
 
 test("uploads at concurrency three, persists completed IDs, and only confirms after finalize", async () => {
   const { uploadPhotoDraft } = await subject();
   const d = draft(), api = server(d), progress = [], store = createIndexedDbPhotoDraftStore(new IDBFactory());
+  await store.save(d);
   let active = 0, maximum = 0;
   const result = await uploadPhotoDraft(d, api.fetch, async (entry, photo) => {
     assert.equal(photo.blob.size, 5); assert.ok(entry.signedToken);
     active++; maximum = Math.max(maximum, active);
     await new Promise(resolve => setTimeout(resolve, 3)); active--;
-  }, { save: value => store.save(value), onProgress: value => progress.push(value), isOnline: () => true });
+  }, { store, onProgress: value => progress.push(value), isOnline: () => true });
   assert.equal(result.ok, true); assert.equal(result.submission.submissionId, "submission-1");
   assert.equal(maximum, 3);
   assert.equal((await store.load(d.draftKey)).upload.completedPhotoIds.length, 10, "orchestrator must never clear local draft");
@@ -58,13 +64,14 @@ test("partial failure preserves draft and retries only failed items with stable 
   const { uploadPhotoDraft } = await subject();
   const d = draft(), api = server(d), attempts = [];
   const store = createIndexedDbPhotoDraftStore(new IDBFactory());
+  await store.save(d);
   const first = await uploadPhotoDraft(d, api.fetch, async entry => {
     attempts.push(entry.clientPhotoId); if (entry.clientPhotoId === "photo-2") throw new Error("Connection interrupted");
-  }, { save: value => store.save(value) });
+  }, { store });
   assert.equal(first.ok, false); assert.equal(api.calls.length, 1);
   const restored = await store.load(d.draftKey);
   assert.equal(restored.photos.length, 10); assert.equal(restored.upload.completedPhotoIds.length, 9);
-  const second = await uploadPhotoDraft(restored, api.fetch, async entry => attempts.push(entry.clientPhotoId), { save: value => store.save(value) });
+  const second = await uploadPhotoDraft(restored, api.fetch, async entry => attempts.push(entry.clientPhotoId), { store });
   assert.equal(second.ok, true); assert.equal(attempts.length, 11); assert.equal(attempts.at(-1), "photo-2");
   assert.equal(api.calls.filter(c => c.url.endsWith("prepare")).length, 1);
 });
@@ -73,9 +80,10 @@ test("offline, invalid minimums, and local quota failures make no remote request
   const { uploadPhotoDraft } = await subject();
   for (const kind of ["offline", "minimums", "quota"]) {
     const d = draft(); if (kind === "minimums") d.photos.pop();
-    const api = server(d);
+    const api = server(d), store = await savedStore(d);
+    if (kind === "quota") store.beginSubmission = async () => { throw new DOMException("Full", "QuotaExceededError"); };
     const result = await uploadPhotoDraft(d, api.fetch, async () => assert.fail("must not upload"), {
-      isOnline: () => kind !== "offline", save: async () => { if (kind === "quota") throw new DOMException("Full", "QuotaExceededError"); },
+      store, isOnline: () => kind !== "offline",
     });
     assert.equal(result.ok, false); assert.equal(api.calls.length, 0); assert.ok(d.photos.length >= 9);
   }
@@ -87,8 +95,10 @@ test("quota failure before preparing leaves a new draft editable and preserves a
     const d = draft(), api = server(d);
     if (retry) d.upload = { idempotencyKey: "existing-key", completedPhotoIds: [] };
     const previous = d.upload;
+    const store = await savedStore(d);
+    store.beginSubmission = async () => { throw new DOMException("Full", "QuotaExceededError"); };
     const result = await uploadPhotoDraft(d, api.fetch, async () => assert.fail("must not upload"), {
-      save: async () => { throw new DOMException("Full", "QuotaExceededError"); },
+      store,
     });
     assert.equal(result.ok, false);
     assert.equal(d.upload, previous, "failed local save must not introduce a new upload lock or lose an existing retry key");
@@ -137,15 +147,57 @@ test("restoring a visit resets terminal failure, progress, editor, and confirmat
 test("double submit shares one operation and finalized retries skip every uploaded object", async () => {
   const { uploadPhotoDraft } = await subject();
   const d = draft(), api = server(d, { alreadyUploaded: d.photos.map(p => p.clientPhotoId) });
+  const store = await savedStore(d);
   const upload = async () => assert.fail("already uploaded objects must be skipped");
-  const [first, second] = await Promise.all([uploadPhotoDraft(d, api.fetch, upload), uploadPhotoDraft(d, api.fetch, upload)]);
+  const [first, second] = await Promise.all([uploadPhotoDraft(d, api.fetch, upload, { store }), uploadPhotoDraft(d, api.fetch, upload, { store })]);
   assert.equal(first.ok, true); assert.equal(second.ok, true); assert.equal(api.calls.length, 2);
+});
+
+test("independent restored tabs acquire one persisted attempt and finalize only one photo set", async () => {
+  const { uploadPhotoDraft } = await subject();
+  const factory = new IDBFactory(), leftStore = createIndexedDbPhotoDraftStore(factory), rightStore = createIndexedDbPhotoDraftStore(factory);
+  const original = draft(); await leftStore.save(original);
+  const left = await leftStore.load(original.draftKey), right = await rightStore.load(original.draftKey);
+  assert.notEqual(left, right);
+  const api = server(original), keys = new Set(), finalized = new Map();
+  const fetcher = async (url, init) => {
+    const body = JSON.parse(init.body);
+    if (url.endsWith("prepare")) keys.add(body.idempotencyKey);
+    if (url.endsWith("finalize")) finalized.set(body.idempotencyKey, body.photos.length);
+    return api.fetch(url, init);
+  };
+  const results = await Promise.all([
+    uploadPhotoDraft(left, fetcher, async () => {}, { store: leftStore }),
+    uploadPhotoDraft(right, fetcher, async () => {}, { store: rightStore }),
+  ]);
+  assert.ok(results.some(result => result.ok));
+  assert.equal(keys.size, 1, "separate restored copies must never mint separate attempt keys");
+  assert.equal(left.upload.idempotencyKey, right.upload.idempotencyKey);
+  assert.equal([...finalized.values()].reduce((sum, count) => sum + count, 0), 10);
+  assert.equal((await rightStore.load(original.draftKey)).upload.idempotencyKey, left.upload.idempotencyKey);
+  assert.equal((await uploadPhotoDraft(right, fetcher, async () => {}, { store: rightStore })).ok, true);
+  await assert.rejects(leftStore.save(original), { name: "PhotoDraftConflictError" });
+  await leftStore.delete(original.draftKey);
+  const callCount = api.calls.length;
+  assert.equal((await uploadPhotoDraft(right, fetcher, async () => {}, { store: rightStore })).ok, false);
+  assert.equal(api.calls.length, callCount, "a tab holding a completed/deleted draft cannot create another attempt");
+});
+
+test("submission reloads authoritative saved photos before preparing a stale restored copy", async () => {
+  const { uploadPhotoDraft } = await subject();
+  const store = createIndexedDbPhotoDraftStore(new IDBFactory()), original = draft(); await store.save(original);
+  const stale = await store.load(original.draftKey), newer = await store.load(original.draftKey);
+  newer.photos[0].photoName = "Authoritative saved name"; await store.save(newer);
+  const api = server(newer);
+  assert.equal((await uploadPhotoDraft(stale, api.fetch, async () => {}, { store })).ok, true);
+  assert.equal(api.calls[0].body.photos[0].photoName, "Authoritative saved name");
+  assert.equal(stale.photos[0].photoName, "Authoritative saved name");
 });
 
 test("finalize failure preserves retry state and does not report complete", async () => {
   const { uploadPhotoDraft } = await subject();
   const d = draft(), api = server(d, { finalizeFails: true }), progress = [];
-  const result = await uploadPhotoDraft(d, api.fetch, async () => {}, { onProgress: p => progress.push(p) });
+  const result = await uploadPhotoDraft(d, api.fetch, async () => {}, { store: await savedStore(d), onProgress: p => progress.push(p) });
   assert.equal(result.ok, false); assert.equal(result.code, "RETRYABLE_FAILURE");
   assert.equal(d.photos.length, 10); assert.equal(d.upload.completedPhotoIds.length, 10);
   assert.equal(progress.some(p => p.phase === "complete"), false);
@@ -154,6 +206,7 @@ test("finalize failure preserves retry state and does not report complete", asyn
 test("missing objects at finalize reconcile server state before retrying missing uploads", async () => {
   const { uploadPhotoDraft } = await subject();
   const d = draft(), api = server(d), attempts = [];
+  const store = await savedStore(d);
   let finalizeCount = 0;
   const fetch = async (url, init) => {
     if (url.endsWith("finalize") && finalizeCount++ === 0) return Response.json({ error: "Missing object", code: "UPLOAD_INCOMPLETE" }, { status: 409 });
@@ -165,21 +218,22 @@ test("missing objects at finalize reconcile server state before retrying missing
     return api.fetch(url, init);
   };
   const upload = async entry => attempts.push(entry.clientPhotoId);
-  assert.equal((await uploadPhotoDraft(d, fetch, upload)).ok, false);
-  assert.equal((await uploadPhotoDraft(d, fetch, upload)).ok, true);
+  assert.equal((await uploadPhotoDraft(d, fetch, upload, { store })).ok, false);
+  assert.equal((await uploadPhotoDraft(d, fetch, upload, { store })).ok, true);
   assert.equal(attempts.length, 11); assert.equal(attempts.at(-1), "photo-2");
 });
 
 test("lost upload responses reconcile existing objects without overwriting them", async () => {
   const { uploadPhotoDraft } = await subject();
   const d = draft(), api = server(d), attempts = [];
+  const store = await savedStore(d);
   const first = await uploadPhotoDraft(d, api.fetch, async entry => {
     attempts.push(entry.clientPhotoId);
     if (entry.clientPhotoId === "photo-2") throw Object.assign(new Error("Already exists"), { code: "RECONCILE_UPLOAD" });
-  });
+  }, { store });
   assert.equal(first.ok, false);
   const retry = server(d, { alreadyUploaded: d.photos.map(p => p.clientPhotoId) });
-  assert.equal((await uploadPhotoDraft(d, retry.fetch, async () => assert.fail("must not overwrite"))).ok, true);
+  assert.equal((await uploadPhotoDraft(d, retry.fetch, async () => assert.fail("must not overwrite"), { store })).ok, true);
   assert.equal(attempts.length, 10);
 });
 
@@ -213,6 +267,20 @@ test("Demo 5 exposes its scoped camera, editor, persistence, and accessible form
   assert.match(editor, /\.focus\(/); assert.match(editor, /validateDraftPhoto/);
   assert.match(form, /returnFocus: document\.activeElement/);
   assert.match(editor, /edit\.returnFocus/);
+});
+
+test("restore options remain visible alongside a preserved-corruption warning", async () => {
+  const hook = registerHooks({ load(url, context, nextLoad) {
+    if (url.endsWith(".tsx")) return { format: "module", shortCircuit: true, source: ts.transpileModule(readFileSync(new URL(url), "utf8"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext } }).outputText };
+    return nextLoad(url, context);
+  } });
+  try {
+    const { DemoFiveDraftRestore } = await import("../components/photographer-guide/demo-five-draft-restore.tsx");
+    const html = renderToStaticMarkup(createElement(DemoFiveDraftRestore, { drafts: [draft()], unreadableCount: 1, disabled: false, onRestore() {} }));
+    assert.match(html, /role="alert"/);
+    assert.match(html, /could not be read/i); assert.match(html, /preserved/i);
+    assert.match(html, /Restore 123 Main Street \(10 photos\)/);
+  } finally { hook.deregister(); }
 });
 
 test("rendered category counts real photos, supports repeated types, and keeps N/A separate", async () => {

@@ -1,13 +1,21 @@
 import {
   OPTIONAL_FEATURES,
   validateDraftPhoto,
+  validateSubmissionManifest,
   type DraftPhoto,
   type NotApplicableSelection,
   type PhotographerDetails,
 } from "./photo-workflow.ts";
 
+export type UploadEntry = { clientPhotoId: string; objectPath: string; alreadyUploaded: boolean; signedToken: string | null };
+type DraftUpload = {
+  idempotencyKey: string;
+  prepared?: { sessionId: string; idempotencyKey: string; uploads: UploadEntry[] };
+  completedPhotoIds: string[];
+};
 export type PhotoDraft = {
   version: 1;
+  revision?: number;
   draftKey: string;
   browserDraftId: string;
   propertyAddress: string;
@@ -15,13 +23,15 @@ export type PhotoDraft = {
   photos: DraftPhoto[];
   notApplicable: NotApplicableSelection[];
   updatedAt: string;
+  upload?: DraftUpload;
 };
 
 export type PhotoDraftStore = {
   load(draftKey: string): Promise<PhotoDraft | null>;
-  save(draft: PhotoDraft): Promise<void>;
+  save(draft: PhotoDraft, previousKey?: string): Promise<void>;
+  beginSubmission(draftKey: string): Promise<PhotoDraft>;
   delete(draftKey: string): Promise<void>;
-  list(): Promise<PhotoDraft[]>;
+  list(): Promise<{ drafts: PhotoDraft[]; unreadableDraftKeys: IDBValidKey[] }>;
 };
 
 const DATABASE_NAME = "homeoffer365-demo-five";
@@ -32,6 +42,13 @@ export class PhotoDraftCorruptionError extends Error {
   constructor() {
     super("This photo draft could not be read safely. Its saved data has been preserved.");
     this.name = "PhotoDraftCorruptionError";
+  }
+}
+
+export class PhotoDraftConflictError extends Error {
+  constructor() {
+    super("This saved visit changed in another tab or was already submitted. Reload this page and restore the latest saved visit before continuing.");
+    this.name = "PhotoDraftConflictError";
   }
 }
 
@@ -48,6 +65,7 @@ function record(value: unknown): value is Record<string, unknown> {
 function assertPhotoDraft(value: unknown): asserts value is PhotoDraft {
   const corrupt = () => { throw new PhotoDraftCorruptionError(); };
   if (!record(value) || value.version !== 1 || typeof value.browserDraftId !== "string" || !value.browserDraftId.trim()
+    || (value.revision !== undefined && (!Number.isSafeInteger(value.revision) || (value.revision as number) < 0))
     || typeof value.propertyAddress !== "string" || typeof value.draftKey !== "string"
     || value.draftKey !== createPhotoDraftKey(value.propertyAddress, value.browserDraftId)
     || typeof value.updatedAt !== "string" || !Number.isFinite(Date.parse(value.updatedAt))
@@ -80,6 +98,17 @@ function assertPhotoDraft(value: unknown): asserts value is PhotoDraft {
     const key = `${selection.category}:${selection.photoType}`;
     if (selections.has(key)) corrupt();
     selections.add(key);
+  }
+  if (value.upload !== undefined) {
+    if (!record(value.upload) || typeof value.upload.idempotencyKey !== "string" || !value.upload.idempotencyKey
+      || !Array.isArray(value.upload.completedPhotoIds) || value.upload.completedPhotoIds.some(id => !photoIds.has(id))
+      || new Set(value.upload.completedPhotoIds).size !== value.upload.completedPhotoIds.length) return corrupt();
+    const prepared = value.upload.prepared;
+    if (prepared !== undefined && (!record(prepared) || typeof prepared.sessionId !== "string"
+      || prepared.idempotencyKey !== value.upload.idempotencyKey || !Array.isArray(prepared.uploads)
+      || prepared.uploads.some(entry => !record(entry) || !photoIds.has(entry.clientPhotoId as string)
+        || typeof entry.objectPath !== "string" || typeof entry.alreadyUploaded !== "boolean"
+        || (entry.signedToken !== null && typeof entry.signedToken !== "string")))) corrupt();
   }
 }
 
@@ -133,25 +162,85 @@ export function createIndexedDbPhotoDraftStore(indexedDB: IDBFactory | undefined
     }
   }
 
+  async function change(key: string, update: (current: PhotoDraft | undefined, store: IDBObjectStore) => PhotoDraft): Promise<PhotoDraft> {
+    const db = await open();
+    try {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite"), store = tx.objectStore(STORE_NAME);
+        let result: PhotoDraft, failure: unknown;
+        tx.oncomplete = () => resolve(result);
+        tx.onabort = () => reject(failure ?? tx.error ?? new DOMException("Local photo storage transaction aborted.", "AbortError"));
+        const request = store.get(key);
+        request.onsuccess = () => {
+          try {
+            const current: unknown = request.result;
+            if (current !== undefined) { assertPhotoDraft(current); current.revision ??= 0; }
+            result = update(current, store);
+          } catch (error) { failure = error; tx.abort(); }
+        };
+      });
+    } finally { db.close(); }
+  }
+
   return {
     async load(draftKey) {
       const value: unknown = await transaction("readonly", (store) => store.get(draftKey));
       if (value === undefined) return null;
       assertPhotoDraft(value);
+      value.revision ??= 0;
       return value;
     },
-    async save(draft) {
+    async save(draft, previousKey = draft.draftKey) {
       const snapshot: unknown = structuredClone(draft);
       assertPhotoDraft(snapshot);
-      await transaction("readwrite", (store) => store.put(snapshot));
+      const saved = await change(previousKey, (current, store) => {
+        if ((current?.revision ?? 0) !== (snapshot.revision ?? 0)
+          || (!current && snapshot.revision !== undefined)
+          || (current && current.browserDraftId !== snapshot.browserDraftId)) throw new PhotoDraftConflictError();
+        snapshot.revision = (current?.revision ?? 0) + 1;
+        if (previousKey !== snapshot.draftKey) {
+          // add() also refuses to overwrite a destination created by another tab.
+          store.add(snapshot); store.delete(previousKey);
+        } else store.put(snapshot);
+        return snapshot;
+      });
+      draft.revision = saved.revision;
+    },
+    async beginSubmission(draftKey) {
+      return change(draftKey, (current, store) => {
+        if (!current) throw new PhotoDraftConflictError();
+        const validation = validateSubmissionManifest(current);
+        if (!validation.ok) throw new Error(validation.error);
+        if (!current.upload) {
+          current.upload = { idempotencyKey: crypto.randomUUID(), completedPhotoIds: [] };
+          current.revision = (current.revision ?? 0) + 1;
+          store.put(current);
+        }
+        return current;
+      });
     },
     async delete(draftKey) {
       await transaction("readwrite", (store) => store.delete(draftKey));
     },
     async list() {
-      const values: unknown[] = await transaction("readonly", (store) => store.getAll());
-      for (const value of values) assertPhotoDraft(value);
-      return values as PhotoDraft[];
+      const entries: { key: IDBValidKey; value: unknown }[] = [];
+      await transaction("readonly", (store) => {
+        const request = store.openCursor();
+        request.onsuccess = () => {
+          const cursor = request.result;
+          if (cursor) { entries.push({ key: cursor.primaryKey, value: cursor.value }); cursor.continue(); }
+        };
+        return request;
+      });
+      const drafts: PhotoDraft[] = [], unreadableDraftKeys: IDBValidKey[] = [];
+      for (const { key, value } of entries) {
+        try { assertPhotoDraft(value); value.revision ??= 0; drafts.push(value); }
+        catch (error) {
+          if (!(error instanceof PhotoDraftCorruptionError)) throw error;
+          unreadableDraftKeys.push(key);
+        }
+      }
+      return { drafts, unreadableDraftKeys };
     },
   };
 }

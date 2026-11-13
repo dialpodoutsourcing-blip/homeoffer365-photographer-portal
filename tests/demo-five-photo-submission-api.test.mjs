@@ -45,6 +45,10 @@ function fixture() {
       signed.push(path); return `private-token-${signed.length}`;
     },
     async inspectObject(path) { return objects.get(path) ?? null; },
+    async readObjectPrefix(path, length) {
+      assert.equal(length, 12);
+      return objects.get(path)?.prefix ?? new Uint8Array([82, 73, 70, 70, 0, 0, 0, 0, 87, 69, 66, 80]);
+    },
     async markTerminal(id, key, status) {
       const s = sessions.get(id);
       if (s?.idempotencyKey !== key || s.status !== "prepared") return false;
@@ -191,6 +195,42 @@ test("expired prepare/finalize mark the session expired and delete only its reco
   }
 });
 
+test("expiry losing its conditional update to finalize recovers the committed result for both endpoints", async () => {
+  for (const phase of ["prepare", "finalize"]) {
+    const { f, input, finalInput, result } = await prepared();
+    const mark = f.operations.markTerminal;
+    let committed;
+    f.dependencies.now = () => now + 7200000;
+    f.operations.markTerminal = async (...args) => {
+      // checkSession has already read prepared + expired. A request which
+      // entered before expiry commits while the terminal update waits for it.
+      committed = await finalizePhotoSubmission(finalInput, { ...f.dependencies, now: () => now });
+      return mark(...args);
+    };
+    const response = await (phase === "prepare" ? handlePreparePhotoSubmission(request(input), f.dependencies) : handleFinalizePhotoSubmission(request(finalInput), f.dependencies));
+    assert.equal(response.status, phase === "prepare" ? 201 : 200);
+    const body = await response.json();
+    if (phase === "prepare") {
+      assert.equal(body.idempotencyKey, input.idempotencyKey);
+      assert.ok(body.uploads.every(u => u.alreadyUploaded && u.signedToken === null));
+      assert.deepEqual(await finalizePhotoSubmission(finalInput, f.dependencies), committed);
+    } else assert.deepEqual(body, committed);
+    assert.equal(f.sessions.get(result.sessionId).status, "finalized");
+    assert.equal(f.deleted.length, 0); assert.equal(f.sessions.size, 1);
+  }
+});
+
+test("failed expiry coordination stays retryable instead of authorizing a fresh key", async () => {
+  const { f, finalInput, result } = await prepared();
+  f.dependencies.now = () => now + 7200000;
+  f.operations.markTerminal = async () => { throw new Error("Temporary database failure"); };
+  const response = await handleFinalizePhotoSubmission(request(finalInput), f.dependencies);
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).code, "RETRYABLE_FAILURE");
+  assert.equal(f.sessions.get(result.sessionId).status, "prepared");
+  assert.equal(f.deleted.length, 0);
+});
+
 test("finalize checks all objects, sorts metadata/N/A, and returns an idempotent success after expiry", async () => {
   const { f, finalInput, result } = await prepared();
   const first = await finalizePhotoSubmission(finalInput, f.dependencies);
@@ -209,6 +249,45 @@ test("missing objects leave finalize retryable and do not call RPC", async () =>
   assert.equal(f.finalized.length, 0); assert.equal(f.deleted.length, 0);
   f.objects.set(p.objectPath, { mimeType: p.mimeType, byteSize: p.byteSize });
   assert.equal((await handleFinalizePhotoSubmission(request(finalInput), f.dependencies)).status, 200);
+});
+
+test("allowed image metadata cannot disguise arbitrary bytes or a different image signature", async () => {
+  for (const prefix of [new TextEncoder().encode("not an image"), new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), new Uint8Array([255, 216, 255, 224])]) {
+    const { f, finalInput, result } = await prepared();
+    f.objects.get(finalInput.photos[0].objectPath).prefix = prefix;
+    const response = await handleFinalizePhotoSubmission(request(finalInput), f.dependencies);
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).code, "OBJECT_MISMATCH");
+    assert.equal(f.finalized.length, 0);
+    assert.equal(f.sessions.get(result.sessionId).status, "failed");
+    assert.deepEqual(f.deleted.sort(), result.uploads.map(u => u.objectPath).sort());
+  }
+});
+
+test("JPEG signature matching its declared MIME can finalize", async () => {
+  const input = manifest(); input.photos[0].mimeType = "image/jpeg";
+  const { f, finalInput } = await prepared(fixture(), input);
+  f.objects.get(finalInput.photos[0].objectPath).prefix = new Uint8Array([255, 216, 255, 224]);
+  assert.equal((await finalizePhotoSubmission(finalInput, f.dependencies)).photoCount, 10);
+});
+
+test("prefix reads request a bounded range and cancel the stream without buffering an object", async () => {
+  let cancelled = false, reads = 0;
+  const ops = createPhotoSubmissionOperations({ storage: { from() { return {
+    async createSignedUrl(path, seconds) {
+      assert.equal(path, "owned/photo.webp"); assert.equal(seconds, 60);
+      return { data: { signedUrl: "https://storage.example/private" }, error: null };
+    },
+  }; } } }, async (url, init) => {
+    assert.equal(url, "https://storage.example/private");
+    assert.equal(init.headers.Range, "bytes=0-11");
+    return new Response(new ReadableStream({
+      pull(controller) { reads++; controller.enqueue(new Uint8Array(32)); },
+      cancel() { cancelled = true; },
+    }), { status: 200 });
+  });
+  assert.equal((await ops.readObjectPrefix("owned/photo.webp", 12)).length, 12);
+  assert.equal(cancelled, true); assert.ok(reads <= 2);
 });
 
 for (const change of [{ mimeType: "image/jpeg", byteSize: 1000 }, { mimeType: "image/webp", byteSize: 999 }]) {

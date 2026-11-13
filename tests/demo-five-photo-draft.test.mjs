@@ -89,11 +89,37 @@ test("saving the same key atomically replaces it while list/delete preserve othe
   const changed = { ...first, photographer: { ...first.photographer, name: "Grace" }, photos: [] };
   await store.save(changed);
   assert.deepEqual(await store.load(first.draftKey), changed);
-  assert.deepEqual((await store.list()).map((item) => item.draftKey).sort(), [first.draftKey, second.draftKey].sort());
+  assert.deepEqual((await store.list()).drafts.map((item) => item.draftKey).sort(), [first.draftKey, second.draftKey].sort());
   await store.delete(first.draftKey);
   await store.delete("missing");
   assert.equal(await store.load(first.draftKey), null);
-  assert.deepEqual(await store.list(), [second]);
+  assert.deepEqual(await store.list(), { drafts: [second], unreadableDraftKeys: [] });
+});
+
+test("independent restored copies cannot overwrite newer edits or recreate a deleted draft", async () => {
+  const factory = new IDBFactory(), first = createIndexedDbPhotoDraftStore(factory), second = createIndexedDbPhotoDraftStore(factory);
+  const original = draft(); await first.save(original);
+  const left = await first.load(original.draftKey), right = await second.load(original.draftKey);
+  left.photos[0].photoName = "Newer front view";
+  right.photographer.name = "Stale edit";
+  await first.save(left);
+  await assert.rejects(second.save(right), { name: "PhotoDraftConflictError" });
+  assert.equal((await second.load(original.draftKey)).photos[0].photoName, "Newer front view");
+  await first.delete(original.draftKey);
+  await assert.rejects(second.save(left), { name: "PhotoDraftConflictError" });
+  assert.equal(await first.load(original.draftKey), null);
+});
+
+test("address migration checks the prior revision and moves the record atomically", async () => {
+  const factory = new IDBFactory(), store = createIndexedDbPhotoDraftStore(factory), other = createIndexedDbPhotoDraftStore(factory);
+  const original = draft(); await store.save(original);
+  const stale = await other.load(original.draftKey);
+  const moved = { ...original, propertyAddress: "456 New Street", draftKey: createPhotoDraftKey("456 New Street", original.browserDraftId) };
+  await store.save(moved, original.draftKey);
+  assert.equal(await store.load(original.draftKey), null);
+  assert.equal((await store.load(moved.draftKey)).photos.length, 1);
+  await assert.rejects(other.save({ ...stale, propertyAddress: "789 Stale Street", draftKey: createPhotoDraftKey("789 Stale Street", stale.browserDraftId) }, original.draftKey), { name: "PhotoDraftConflictError" });
+  assert.equal((await store.list()).drafts.length, 1);
 });
 
 test("save snapshots the draft before asynchronous storage opens so later form edits cannot change the saved photo", async () => {
@@ -117,8 +143,18 @@ test("existing v1 data is preserved and missing records return null", async () =
   const input = draft();
   await rawRecord(factory, input.draftKey, input);
   const store = createIndexedDbPhotoDraftStore(factory);
-  assert.deepEqual(await store.load(input.draftKey), input);
+  assert.deepEqual(await store.load(input.draftKey), { ...input, revision: 0 });
   assert.equal(await store.load("missing"), null);
+});
+
+test("legacy records without revisions cannot be recreated by a stale restored copy after deletion", async () => {
+  const factory = new IDBFactory(), store = createIndexedDbPhotoDraftStore(factory);
+  await store.list();
+  const legacy = draft(); await rawRecord(factory, legacy.draftKey, legacy);
+  const stale = await store.load(legacy.draftKey);
+  await store.delete(legacy.draftKey);
+  await assert.rejects(store.save(stale), { name: "PhotoDraftConflictError" });
+  assert.equal(await store.load(legacy.draftKey), null);
 });
 
 test("an unsupported database version rejects without resetting stored data", async () => {
@@ -136,14 +172,18 @@ test("an unsupported database version rejects without resetting stored data", as
   newer.close();
 });
 
-test("corrupt records reject load/list without silently completing photos or deleting original data", async () => {
+test("listing a corrupt draft preserves it and still offers healthy drafts for restoration", async () => {
   const factory = new IDBFactory();
   const store = createIndexedDbPhotoDraftStore(factory);
   await store.list();
   const malformed = draft({ photos: [{ clientPhotoId: "broken", blob: new Blob([]) }] });
   await rawRecord(factory, malformed.draftKey, malformed);
+  const healthy = draft({ browserDraftId: "healthy", draftKey: createPhotoDraftKey("123 Main Street", "healthy") });
+  await store.save(healthy);
   await assert.rejects(store.load(malformed.draftKey), PhotoDraftCorruptionError);
-  await assert.rejects(store.list(), PhotoDraftCorruptionError);
+  const listed = await store.list();
+  assert.deepEqual(listed.drafts, [healthy]);
+  assert.deepEqual(listed.unreadableDraftKeys, [malformed.draftKey]);
   assert.deepEqual(await rawRecord(factory, malformed.draftKey), malformed);
 });
 

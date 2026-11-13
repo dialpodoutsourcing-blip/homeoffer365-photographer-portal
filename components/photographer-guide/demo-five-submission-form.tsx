@@ -2,12 +2,13 @@
 
 import { useEffect, useReducer, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { applyAddressLocality, findAddressLocalities, formatAddressLocality, type AddressLocality } from "@/lib/address-suggestions";
-import { createIndexedDbPhotoDraftStore, createPhotoDraftKey, type PhotoDraftStore } from "@/lib/demo-five/photo-draft-store";
-import { PHOTO_CATEGORIES, validatePhotoMinimums, validateSubmissionManifest, type DraftPhoto, type PhotoCategory, type PhotoType, type PhotographerDetails } from "@/lib/demo-five/photo-workflow";
+import { createIndexedDbPhotoDraftStore, createPhotoDraftKey, PhotoDraftConflictError, type PhotoDraftStore } from "@/lib/demo-five/photo-draft-store";
+import { PHOTO_CATEGORIES, validatePhotoMinimums, type DraftPhoto, type PhotoCategory, type PhotoType, type PhotographerDetails } from "@/lib/demo-five/photo-workflow";
 import { preparePhoto } from "@/lib/demo-five/prepare-photo";
 import { uploadPhotoDraft, uploadToSignedPhotoUrl, type UploadPhotoDraft, type UploadProgress } from "@/lib/demo-five/upload-photo-draft";
 import { DemoFivePhotoCategory } from "./demo-five-photo-category";
 import { DemoFivePhotoEditor } from "./demo-five-photo-editor";
+import { DemoFiveDraftRestore } from "./demo-five-draft-restore";
 import { initialPhotoFormState, photoFormReducer } from "@/lib/demo-five/photo-form-state";
 import { SubmissionConfirmation } from "./submission-confirmation";
 
@@ -18,6 +19,7 @@ function emptyDraft(): UploadPhotoDraft {
     photographer: { name: "", email: "", phone: "", paymentMethod: "", paymentUrl: "" }, photos: [], notApplicable: [], updatedAt: new Date().toISOString() };
 }
 function storageMessage(error: unknown) {
+  if (error instanceof PhotoDraftConflictError) return error.message;
   return error instanceof Error && error.name === "QuotaExceededError"
     ? "Device storage is full. Free some space and save again. This photo has not been added; existing saved photos are preserved."
     : "Could not save on this device. Check browser storage permissions and free space, then try again. Keep this page open to preserve unsaved changes.";
@@ -30,6 +32,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   const writes = useRef(Promise.resolve());
   const submittingRef = useRef(false);
   const [savedDrafts, setSavedDrafts] = useState<UploadPhotoDraft[]>([]);
+  const [unreadableDrafts, setUnreadableDrafts] = useState(0);
   const [attempt, dispatch] = useReducer(photoFormReducer, initialPhotoFormState);
   const { error, busy, submitting, submitted, edit, progress, terminalFailure, editorRevision } = attempt;
   const setError = (error: string) => dispatch({ type: "patch", value: { error } });
@@ -47,9 +50,10 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   useEffect(() => {
     let mounted = true;
     store.current = createIndexedDbPhotoDraftStore(window.indexedDB);
-    store.current.list().then(drafts => {
+    store.current.list().then(({ drafts, unreadableDraftKeys }) => {
       if (!mounted) return;
       setSavedDrafts(drafts.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+      setUnreadableDrafts(unreadableDraftKeys.length);
     }).catch(error => { if (mounted) setError(error instanceof Error ? error.message : storageMessage(error)); }).finally(() => {
       if (mounted) { const value = emptyDraft(); current.current = value; setDraft(value); setOnline(navigator.onLine); }
     });
@@ -58,14 +62,16 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     return () => { mounted = false; window.removeEventListener("online", connectivity); window.removeEventListener("offline", connectivity); };
   }, []);
 
-  // Every save is ordered. An address change migrates the same visit only after
-  // its new address-scoped record has been stored successfully.
+  // Ordered local edits advance from our own last committed revision. The
+  // repository compares that revision atomically against other tabs' writes.
   function persist(value: UploadPhotoDraft, previousKey?: string): Promise<void> {
     const snapshot = structuredClone(value);
     const pending = writes.current.catch(() => {}).then(async () => {
       if (!store.current) throw new Error("Local photo storage is not ready.");
-      await store.current.save(snapshot);
-      if (previousKey && previousKey !== snapshot.draftKey) await store.current.delete(previousKey);
+      if (current.current?.browserDraftId === snapshot.browserDraftId) snapshot.revision = current.current.revision;
+      await store.current.save(snapshot, previousKey);
+      value.revision = snapshot.revision;
+      if (current.current?.browserDraftId === snapshot.browserDraftId) current.current.revision = snapshot.revision;
     });
     writes.current = pending;
     return pending;
@@ -129,7 +135,12 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   async function restore(value: UploadPhotoDraft) {
     if (busy || submittingRef.current) return;
     setBusy(true);
-    try { await writes.current; display(value); setSavedDrafts([]); dispatch({ type: "draftRestored" }); closeSuggestions(); setNotice("Saved visit restored, including photos and upload progress."); }
+    try {
+      await writes.current;
+      const latest = await store.current!.load(value.draftKey);
+      if (!latest) throw new PhotoDraftConflictError();
+      display(latest); setSavedDrafts([]); dispatch({ type: "draftRestored" }); closeSuggestions(); setNotice("Saved visit restored, including photos and upload progress.");
+    }
     catch (error) { setError(storageMessage(error)); }
     finally { setBusy(false); }
   }
@@ -148,15 +159,12 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     if (submittingRef.current || busy || !current.current) return;
     if (!navigator.onLine) { setError("You are offline. Reconnect to submit; you can keep saving photos on this device."); return; }
     if (!storageOrigin) { setError("Photo upload configuration is unavailable. Please contact Home Offer 365."); return; }
-    const validation = validateSubmissionManifest(current.current);
-    if (!validation.ok) { setError(validation.error); return; }
     submittingRef.current = true; dispatch({ type: "submissionStarted" }); closeSuggestions();
     try {
       // Retry the latest in-memory state if an earlier field save hit quota.
-      await writes.current.catch(() => {});
-      await persist(current.current);
+      await writes.current.catch(() => persist(current.current!));
       const value = current.current;
-      const result = await uploadPhotoDraft(value, fetch, (entry, photo) => uploadToSignedPhotoUrl(storageOrigin, entry, photo), { save: state => persist(state), onProgress: setProgress });
+      const result = await uploadPhotoDraft(value, fetch, (entry, photo) => uploadToSignedPhotoUrl(storageOrigin, entry, photo), { store: store.current!, onProgress: setProgress });
       display({ ...value });
       if (!result.ok) {
         setError(result.error);
@@ -184,7 +192,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
 
   return <section id="submit-photos" className="demo-five-photo-form" aria-labelledby="demo-five-submit-title">
     <header><h2 id="demo-five-submit-title">Your property photo checklist</h2><p>Save your visit on this device, then submit all your photos together.</p><p>Minimums: 4 Exterior · 4 Interior · 1 Mechanical · 1 Condition. N/A selections do not replace photos.</p></header>
-    {savedDrafts.length > 0 && <aside className="demo-five-restore"><h3>Continue a saved visit</h3>{savedDrafts.map(value => <button type="button" key={value.draftKey} disabled={submitting || busy} onClick={() => void restore(value)}>Restore {value.propertyAddress || "unfinished visit"} ({value.photos.length} photos)</button>)}</aside>}
+    <DemoFiveDraftRestore drafts={savedDrafts} unreadableCount={unreadableDrafts} disabled={submitting || busy} onRestore={value => void restore(value)} />
     <form onSubmit={submit}>
       <fieldset disabled={disabled} className="demo-five-details">
         <legend>Photographer and property details</legend>

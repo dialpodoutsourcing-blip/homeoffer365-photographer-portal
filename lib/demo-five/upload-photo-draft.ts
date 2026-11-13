@@ -1,15 +1,13 @@
 import { validateSubmissionManifest, type DraftPhoto } from "./photo-workflow.ts";
-import type { PhotoDraft } from "./photo-draft-store.ts";
+import type { PhotoDraft, PhotoDraftStore, UploadEntry } from "./photo-draft-store.ts";
 
-export type UploadEntry = { clientPhotoId: string; objectPath: string; alreadyUploaded: boolean; signedToken: string | null };
+export type { UploadEntry } from "./photo-draft-store.ts";
 type PreparedSession = { sessionId: string; idempotencyKey: string; uploads: UploadEntry[] };
-export type UploadPhotoDraft = PhotoDraft & {
-  upload?: { idempotencyKey: string; prepared?: PreparedSession; completedPhotoIds: string[] };
-};
+export type UploadPhotoDraft = PhotoDraft;
 export type UploadProgress = { phase: "preparing" | "uploading" | "finalizing" | "complete"; completed: number; total: number; currentPhotoName: string };
 type Submission = { submissionId: string; photographerId: string; photoCount: number };
 type Result = { ok: true; submission: Submission } | { ok: false; error: string; code?: string; failedPhotoIds: string[] };
-type Options = { save?: (draft: UploadPhotoDraft) => Promise<void>; onProgress?: (progress: UploadProgress) => void; isOnline?: () => boolean };
+type Options = { store: PhotoDraftStore; onProgress?: (progress: UploadProgress) => void; isOnline?: () => boolean };
 const activeUploads = new WeakMap<UploadPhotoDraft, Promise<Result>>();
 
 export function validStorageOrigin(value: string | undefined): string {
@@ -38,7 +36,7 @@ export async function uploadToSignedPhotoUrl(origin: string, entry: UploadEntry,
   }
 }
 
-export function uploadPhotoDraft(draft: UploadPhotoDraft, fetcher: typeof fetch, uploadToSignedUrl: (entry: UploadEntry, photo: DraftPhoto) => Promise<void>, options: Options = {}): Promise<Result> {
+export function uploadPhotoDraft(draft: UploadPhotoDraft, fetcher: typeof fetch, uploadToSignedUrl: (entry: UploadEntry, photo: DraftPhoto) => Promise<void>, options: Options): Promise<Result> {
   const active = activeUploads.get(draft);
   if (active) return active;
   const operation = runUpload(draft, fetcher, uploadToSignedUrl, options).finally(() => activeUploads.delete(draft));
@@ -48,8 +46,8 @@ export function uploadPhotoDraft(draft: UploadPhotoDraft, fetcher: typeof fetch,
 
 async function runUpload(draft: UploadPhotoDraft, fetcher: typeof fetch, uploadToSignedUrl: (entry: UploadEntry, photo: DraftPhoto) => Promise<void>, options: Options): Promise<Result> {
   const failedPhotoIds: string[] = [];
-  const save = options.save ?? (async () => {});
-  const total = draft.photos.length;
+  const save = (value: PhotoDraft) => options.store.save(value);
+  let total = draft.photos.length;
   const progress = (phase: UploadProgress["phase"], currentPhotoName = "") => options.onProgress?.({ phase, completed: Math.min(draft.upload?.completedPhotoIds.length ?? 0, total), total, currentPhotoName });
   async function post<T>(endpoint: string, body: unknown): Promise<T> {
     const response = await fetcher(`/api/demo-five/submissions/${endpoint}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -59,19 +57,17 @@ async function runUpload(draft: UploadPhotoDraft, fetcher: typeof fetch, uploadT
   }
   try {
     if (!(options.isOnline?.() ?? (typeof navigator === "undefined" || navigator.onLine !== false))) throw new Error("You are offline. Your photos are saved on this device; reconnect to submit.");
-    const validation = validateSubmissionManifest(draft);
-    if (!validation.ok) throw new Error(validation.error);
-    const previousUpload = draft.upload;
-    draft.upload ??= { idempotencyKey: crypto.randomUUID(), completedPhotoIds: [] };
-    try { await save(draft); }
+    // The read and first key assignment share one IndexedDB transaction. A
+    // restored copy must use this authoritative manifest and attempt, never
+    // overwrite them with its earlier in-memory snapshot.
+    try { Object.assign(draft, await options.store.beginSubmission(draft.draftKey)); }
     catch (error) {
-      // No request has started: retain a pre-existing retry key, but do not lock
-      // an editable visit when its newly created upload state cannot be saved.
-      draft.upload = previousUpload;
-      throw new Error(error instanceof Error && error.name === "QuotaExceededError"
-        ? "Device storage is full. Free some space or remove unneeded photos, then retry. Your saved photos are preserved."
-        : "Could not save submission progress on this device. Check browser storage permissions and free space, then retry.");
+      if (error instanceof Error && error.name === "QuotaExceededError") throw new Error("Device storage is full. Free some space or remove unneeded photos, then retry. Your saved photos are preserved.");
+      throw error;
     }
+    const validation = validateSubmissionManifest(draft);
+    if (!validation.ok || !draft.upload) throw new Error(validation.ok ? "Could not save the submission attempt. Please retry." : validation.error);
+    total = draft.photos.length;
     progress("preparing");
     if (!draft.upload.prepared) {
       draft.upload.prepared = await post<PreparedSession>("prepare", { ...validation.value, idempotencyKey: draft.upload.idempotencyKey });
