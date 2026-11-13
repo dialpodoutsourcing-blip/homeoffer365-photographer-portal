@@ -8,7 +8,7 @@ export const PHOTO_TYPES = {
 } as const;
 
 export const OPTIONAL_FEATURES = {
-  exterior: ["roof", "outbuildings"],
+  exterior: [],
   interior: ["basement", "attic", "garage"],
   mechanical: [],
   condition: [],

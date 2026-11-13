@@ -22,7 +22,7 @@ function draft(overrides = {}) {
     browserDraftId,
     propertyAddress,
     photographer: { name: "Ada", email: "", phone: "", paymentMethod: "", paymentUrl: "" },
-    notApplicable: [{ category: "exterior", photoType: "roof" }],
+    notApplicable: [{ category: "interior", photoType: "basement" }],
     updatedAt: "2026-11-13T12:00:00.000Z",
     photos: [{
       clientPhotoId: "photo-1", photoName: "Front view", category: "exterior",

@@ -288,7 +288,7 @@ test("restore options remain visible alongside a preserved-corruption warning", 
   } finally { hook.deregister(); }
 });
 
-test("rendered category counts real photos, supports repeated types, and keeps N/A separate", async () => {
+test("rendered category requires Exterior and limits Interior N/A to optional features", async () => {
   const hook = registerHooks({
     resolve(specifier, context, nextResolve) {
       if (specifier.startsWith("@/")) {
@@ -308,14 +308,19 @@ test("rendered category counts real photos, supports repeated types, and keeps N
   });
   try {
     const { DemoFivePhotoCategory } = await import("../components/photographer-guide/demo-five-photo-category.tsx");
-    const props = { category: "exterior", photos: draft().photos.slice(0, 2), notApplicable: [{ category: "exterior", photoType: "roof" }], disabled: false,
+    const props = { category: "exterior", photos: draft().photos.slice(0, 2), notApplicable: [], disabled: false,
       onCapture() {}, onView() {}, onRemove() {}, onNotApplicable() {}, onCancelCapture() {} };
     const html = renderToStaticMarkup(createElement(DemoFivePhotoCategory, props));
     assert.match(html, /2\/4 photos — Needed/);
     assert.equal((html.match(/<li>/g) ?? []).length, 2);
-    assert.match(html, /checked=""[^>]*\/>Roof N\/A/);
-    assert.match(html, /<details class="demo-five-na-disclosure"><summary>Mark feature N\/A<\/summary>/);
-    assert.doesNotMatch(html, /<details class="demo-five-na-disclosure" open/);
+    assert.doesNotMatch(html, /Mark feature N\/A/);
+    const interior = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, category: "interior", photos: [], notApplicable: [{ category: "interior", photoType: "basement" }] }));
+    assert.match(interior, /checked=""[^>]*\/>Basement N\/A/);
+    assert.match(interior, />Attic N\/A/);
+    assert.match(interior, />Garage N\/A/);
+    assert.doesNotMatch(interior, /Roof N\/A|Outbuildings N\/A/);
+    assert.match(interior, /<details class="demo-five-na-disclosure"><summary>Mark feature N\/A<\/summary>/);
+    assert.doesNotMatch(interior, /<details class="demo-five-na-disclosure" open/);
     const mechanical = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, category: "mechanical", photos: [], notApplicable: [] }));
     assert.doesNotMatch(mechanical, /Mark feature N\/A/);
     assert.match(html, /accept="image\/\*" capture="environment"/);

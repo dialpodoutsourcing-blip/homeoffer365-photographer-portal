@@ -13,7 +13,7 @@ function manifest() {
     idempotencyKey: randomUUID(),
     photographer: { name: "Ada", email: " ADA@Example.com ", phone: "123", paymentMethod: "Invoice", paymentUrl: "https://example.com/pay" },
     propertyAddress: "123 Example Street",
-    notApplicable: [{ category: "interior", photoType: "attic" }, { category: "exterior", photoType: "roof" }],
+    notApplicable: [{ category: "interior", photoType: "attic" }, { category: "interior", photoType: "basement" }],
     photos: ["exterior", "exterior", "exterior", "exterior", "interior", "interior", "interior", "interior", "mechanical", "condition"].map((category, i) => ({
       clientPhotoId: `photo-${i}`, photoName: `Photo ${i}`, category,
       photoType: { exterior: "front", interior: "kitchen", mechanical: "hvac", condition: "general_condition" }[category],
@@ -237,7 +237,7 @@ test("finalize checks all objects, sorts metadata/N/A, and returns an idempotent
   assert.deepEqual(first, { submissionId: result.sessionId, photographerId: [...f.people.keys()][0], photoCount: 10 });
   assert.equal(f.finalized.length, 1);
   assert.equal(f.finalized[0].photos[0].capturedAt, "2026-11-13T12:00:00.000Z");
-  assert.deepEqual(f.finalized[0].notApplicable, [{ category: "exterior", photoType: "roof" }, { category: "interior", photoType: "attic" }]);
+  assert.deepEqual(f.finalized[0].notApplicable, [{ category: "interior", photoType: "attic" }, { category: "interior", photoType: "basement" }]);
   f.dependencies.now = () => now + 99999999; finalInput.photos.reverse(); finalInput.notApplicable.reverse();
   assert.deepEqual(await finalizePhotoSubmission(finalInput, f.dependencies), first);
   assert.equal(f.deleted.length, 0);

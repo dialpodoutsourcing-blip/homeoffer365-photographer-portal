@@ -156,12 +156,10 @@ test("minimums count actual photos and allow multiple photos of the same type", 
 
 test("N/A accepts only the approved feature/category pairs without lowering minimums", () => {
   assert.deepEqual(OPTIONAL_FEATURES, {
-    exterior: ["roof", "outbuildings"], interior: ["basement", "attic", "garage"],
+    exterior: [], interior: ["basement", "attic", "garage"],
     mechanical: [], condition: [],
   });
   const notApplicable = [
-    { category: "exterior", photoType: "roof" },
-    { category: "exterior", photoType: "outbuildings" },
     { category: "interior", photoType: "basement" },
     { category: "interior", photoType: "attic" },
     { category: "interior", photoType: "garage" },
@@ -169,6 +167,8 @@ test("N/A accepts only the approved feature/category pairs without lowering mini
   assert.equal(validateSubmissionManifest(manifest({ notApplicable })).ok, true);
   rejects(validateSubmissionManifest(manifest({ photos: manifest().photos.slice(1), notApplicable })));
   for (const pair of [
+    { category: "exterior", photoType: "roof" },
+    { category: "exterior", photoType: "outbuildings" },
     { category: "exterior", photoType: "basement" },
     { category: "interior", photoType: "outbuildings" },
     { category: "interior", photoType: "kitchen" },
