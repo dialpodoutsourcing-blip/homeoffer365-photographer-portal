@@ -208,6 +208,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
           <label>Payment URL<input type="url" name="paymentUrl" inputMode="url" maxLength={2048} required pattern="https://.*" value={draft?.photographer.paymentUrl ?? ""} onChange={event => photographerField("paymentUrl", event.target.value)} placeholder="https://…" /></label>
         </div>
       </fieldset>
+      <p className="demo-five-orientation-guidance"><strong>Take all photos horizontally (landscape orientation).</strong></p>
       <div className="demo-five-categories">{PHOTO_CATEGORIES.map(category => <DemoFivePhotoCategory key={category} category={category} photos={draft?.photos.filter(photo => photo.category === category) ?? []} notApplicable={draft?.notApplicable ?? []} disabled={disabled} onCapture={(file, category, existing) => void capture(file, category, existing)} onView={photo => dispatch({ type: "openEditor", edit: { image: photo, category: photo.category, existing: photo, capturedAt: photo.capturedAt, viewOnly: true } })} onRemove={photo => void removePhoto(photo)} onNotApplicable={(category, type, checked) => void notApplicable(category, type, checked)} onCancelCapture={() => setNotice("No photo was added. If camera access was denied, enable it in browser settings or choose an existing image.")} />)}</div>
       {locked && <p>This visit is saved for submission. Retry to finish uploading the remaining photos.</p>}
       {!online && <p role="status">You are offline. Keep taking and saving photos; reconnect before submitting.</p>}

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { getPhotoTypeOptions, validateDraftPhoto, type DraftPhoto, type PhotoType, type ConditionStatus } from "@/lib/demo-five/photo-workflow";
+import { getPhotoTypeLabel, getPhotoTypeOptions, validateDraftPhoto, type DraftPhoto, type PhotoType, type ConditionStatus } from "@/lib/demo-five/photo-workflow";
 import type { PhotoEdit } from "@/lib/demo-five/photo-form-state";
 
 export function photoLabel(value: string) {
-  return value === "hvac" ? "HVAC" : value.split("_").map(word => word[0].toUpperCase() + word.slice(1)).join(" ");
+  return getPhotoTypeLabel(value);
 }
 
 export function DraftPhotoPreview({ blob, name }: { blob: Blob; name: string }) {

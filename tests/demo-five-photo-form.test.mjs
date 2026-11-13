@@ -291,6 +291,7 @@ test("restore options remain visible alongside a preserved-corruption warning", 
 test("rendered category requires Exterior and limits Interior N/A to optional features", async () => {
   const hook = registerHooks({
     resolve(specifier, context, nextResolve) {
+      if (specifier === "next/image") return { url: new URL("../node_modules/next/image.js", import.meta.url).href, shortCircuit: true };
       if (specifier.startsWith("@/")) {
         const base = new URL(`../${specifier.slice(2)}`, import.meta.url);
         for (const suffix of [".ts", ".tsx"]) if (existsSync(fileURLToPath(base) + suffix)) return { url: base.href + suffix, shortCircuit: true };
@@ -308,6 +309,19 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
   });
   try {
     const { DemoFivePhotoCategory } = await import("../components/photographer-guide/demo-five-photo-category.tsx");
+    const { photoLabel } = await import("../components/photographer-guide/demo-five-photo-editor.tsx");
+    const { DemoFiveSubmissionForm } = await import("../components/photographer-guide/demo-five-submission-form.tsx");
+    const formHtml = renderToStaticMarkup(createElement(DemoFiveSubmissionForm, { storageOrigin: "https://storage.example.com" }));
+    assert.match(formHtml, /Take all photos horizontally \(landscape orientation\)\.[\s\S]*demo-five-categories/);
+    assert.deepEqual([
+      photoLabel("front"), photoLabel("exterior_ac_condenser"), photoLabel("roof_soffit_and_gutters"),
+      photoLabel("hallway_room_layout"), photoLabel("kitchen_under_sink_plumbing"), photoLabel("basement_window_and_egress"),
+      photoLabel("furnace_and_ductwork"), photoLabel("hvac_service_connections"),
+    ], [
+      "Front exterior", "Exterior AC condenser", "Roof, soffit, and gutters",
+      "Hallway and room layout", "Kitchen under-sink plumbing", "Basement window and egress",
+      "Furnace and ductwork", "HVAC service connections",
+    ]);
     const props = { category: "exterior", photos: draft().photos.slice(0, 2), notApplicable: [], disabled: false,
       onCapture() {}, onView() {}, onRemove() {}, onNotApplicable() {}, onCancelCapture() {} };
     const html = renderToStaticMarkup(createElement(DemoFivePhotoCategory, props));

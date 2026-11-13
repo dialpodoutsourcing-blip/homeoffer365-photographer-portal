@@ -1,10 +1,17 @@
 export const PHOTO_CATEGORIES = ["exterior", "interior", "mechanical", "condition"] as const;
 
 export const PHOTO_TYPES = {
-  exterior: ["front", "rear", "sides", "roof", "yard", "driveway", "outbuildings", "damage", "other"],
-  interior: ["living_room", "kitchen", "hallway_room_layout", "bedroom", "bathroom", "basement", "attic", "garage", "under_sink", "damage", "other"],
-  mechanical: ["hvac", "water_heater", "electrical_panel", "plumbing", "other"],
+  exterior: ["front", "front_and_driveway", "side_yard", "front_and_side_angle", "property_boundary_and_fence", "rear", "exterior_ac_condenser", "exterior_electrical_service", "front_left_curb_view", "right_side_elevation", "backyard_and_rear_elevation", "roof_soffit_and_gutters", "other"],
+  interior: ["living_room", "dining_area", "hallway_room_layout", "kitchen", "kitchen_under_sink_plumbing", "primary_bedroom", "second_bedroom", "bathroom", "bathroom_vanity_plumbing", "laundry_room", "entry_foyer", "living_room_reverse_view", "dining_room_reverse_view", "kitchen_wide_view", "kitchen_appliance_wall", "kitchen_cabinets_and_counters", "primary_bedroom_reverse_view", "primary_bedroom_closet", "second_bedroom_reverse_view", "bathroom_tub_and_shower", "hallway_linen_storage", "mudroom_and_back_entry", "basement_stair_access", "laundry_reverse_view", "basement", "basement_overview", "basement_stair_landing", "foundation_walls", "floor_drain_condition", "basement_window_and_egress", "basement_storage_area", "support_beam_and_columns", "basement_exterior_exit", "attic", "garage", "other"],
+  mechanical: ["furnace_and_ductwork", "modern_furnace", "water_heater", "water_softener", "well_pump_system", "breaker_panel", "main_water_shutoff", "sump_pump", "hvac_service_connections", "plumbing_distribution", "other"],
   condition: ["general_condition", "damage", "repair_needed", "other"],
+} as const;
+
+const LEGACY_PHOTO_TYPES = {
+  exterior: ["sides", "roof", "yard", "driveway", "outbuildings", "damage"],
+  interior: ["bedroom", "under_sink", "damage"],
+  mechanical: ["hvac", "electrical_panel", "plumbing"],
+  condition: [],
 } as const;
 
 export const OPTIONAL_FEATURES = {
@@ -17,8 +24,77 @@ export const OPTIONAL_FEATURES = {
 export const PHOTO_MINIMUMS = { exterior: 4, interior: 4, mechanical: 1, condition: 1 } as const;
 
 export type PhotoCategory = (typeof PHOTO_CATEGORIES)[number];
-export type PhotoType = (typeof PHOTO_TYPES)[PhotoCategory][number];
+type SelectablePhotoType = (typeof PHOTO_TYPES)[PhotoCategory][number];
+export type PhotoType = SelectablePhotoType | (typeof LEGACY_PHOTO_TYPES)[PhotoCategory][number];
 export type ConditionStatus = "good_condition" | "damage";
+
+export const PHOTO_TYPE_LABELS: { [Type in SelectablePhotoType]: string } = {
+  front: "Front exterior",
+  front_and_driveway: "Front and driveway",
+  side_yard: "Side yard",
+  front_and_side_angle: "Front and side angle",
+  property_boundary_and_fence: "Property boundary and fence",
+  rear: "Rear elevation",
+  exterior_ac_condenser: "Exterior AC condenser",
+  exterior_electrical_service: "Exterior electrical service",
+  front_left_curb_view: "Front-left curb view",
+  right_side_elevation: "Right-side elevation",
+  backyard_and_rear_elevation: "Backyard and rear elevation",
+  roof_soffit_and_gutters: "Roof, soffit, and gutters",
+  living_room: "Living Room",
+  dining_area: "Dining Area",
+  hallway_room_layout: "Hallway and room layout",
+  kitchen: "Kitchen",
+  kitchen_under_sink_plumbing: "Kitchen under-sink plumbing",
+  primary_bedroom: "Primary Bedroom",
+  second_bedroom: "Second Bedroom",
+  bathroom: "Bathroom",
+  bathroom_vanity_plumbing: "Bathroom vanity plumbing",
+  laundry_room: "Laundry Room",
+  entry_foyer: "Entry foyer",
+  living_room_reverse_view: "Living room reverse view",
+  dining_room_reverse_view: "Dining room reverse view",
+  kitchen_wide_view: "Kitchen wide view",
+  kitchen_appliance_wall: "Kitchen appliance wall",
+  kitchen_cabinets_and_counters: "Kitchen cabinets and counters",
+  primary_bedroom_reverse_view: "Primary bedroom reverse view",
+  primary_bedroom_closet: "Primary bedroom closet",
+  second_bedroom_reverse_view: "Second bedroom reverse view",
+  bathroom_tub_and_shower: "Bathroom tub and shower",
+  hallway_linen_storage: "Hallway linen storage",
+  mudroom_and_back_entry: "Mudroom and back entry",
+  basement_stair_access: "Basement stair access",
+  laundry_reverse_view: "Laundry reverse view",
+  basement: "Basement",
+  basement_overview: "Basement overview",
+  basement_stair_landing: "Basement stair landing",
+  foundation_walls: "Foundation walls",
+  floor_drain_condition: "Floor drain condition",
+  basement_window_and_egress: "Basement window and egress",
+  basement_storage_area: "Basement storage area",
+  support_beam_and_columns: "Support beam and columns",
+  basement_exterior_exit: "Basement exterior exit",
+  attic: "Attic",
+  garage: "Garage",
+  furnace_and_ductwork: "Furnace and ductwork",
+  modern_furnace: "Modern furnace",
+  water_heater: "Water heater",
+  water_softener: "Water softener",
+  well_pump_system: "Well pump system",
+  breaker_panel: "Breaker panel",
+  main_water_shutoff: "Main water shutoff",
+  sump_pump: "Sump pump",
+  hvac_service_connections: "HVAC service connections",
+  plumbing_distribution: "Plumbing distribution",
+  general_condition: "General Condition",
+  damage: "Damage",
+  repair_needed: "Repair Needed",
+  other: "Other",
+};
+
+export function getPhotoTypeLabel(value: string): string {
+  return Object.hasOwn(PHOTO_TYPE_LABELS, value) ? PHOTO_TYPE_LABELS[value as SelectablePhotoType] : value === "hvac" ? "HVAC" : value.split("_").map(word => word[0].toUpperCase() + word.slice(1)).join(" ");
+}
 
 export type PhotoMetadata = {
   clientPhotoId: string;
@@ -84,6 +160,10 @@ export function getPhotoTypeOptions(value: string): readonly PhotoType[] {
   return category(value) ? PHOTO_TYPES[value] : [];
 }
 
+function validPhotoType(photoCategory: PhotoCategory, value: unknown): value is PhotoType {
+  return typeof value === "string" && ((PHOTO_TYPES[photoCategory] as readonly string[]).includes(value) || (LEGACY_PHOTO_TYPES[photoCategory] as readonly string[]).includes(value));
+}
+
 function validatePhotoMetadata(input: unknown): ValidationResult<PhotoMetadata> {
   if (!record(input)) return { ok: false, error: "Photo metadata is required." };
   const clientPhotoId = text(input.clientPhotoId, Number.MAX_SAFE_INTEGER);
@@ -93,7 +173,7 @@ function validatePhotoMetadata(input: unknown): ValidationResult<PhotoMetadata> 
   if (!clientPhotoId || !photoName || description === null || description.length > 5000) {
     return { ok: false, error: "Each photo needs an ID, a name of up to 255 characters, and a description of up to 5000 characters." };
   }
-  if (!category(input.category) || !getPhotoTypeOptions(input.category).includes(input.photoType as PhotoType)) {
+  if (!category(input.category) || !validPhotoType(input.category, input.photoType)) {
     return { ok: false, error: "Choose a photo type that belongs to its category." };
   }
   if (input.conditionStatus !== "good_condition" && input.conditionStatus !== "damage") {

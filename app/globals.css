@@ -992,6 +992,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .demo-five-photo-form .demo-five-address-options { position: absolute; z-index: 5; top: 76px; width: 100%; border: 1px solid #c7d1da; border-radius: 8px; background: white; box-shadow: 0 8px 24px #10273d22; overflow: hidden; }
 .demo-five-photo-form .demo-five-address-options button { display: block; width: 100%; text-align: left; border: 0; border-radius: 0; }
 .demo-five-photo-form .demo-five-address-options button[aria-selected="true"], .demo-five-photo-form .demo-five-address-options button:hover { background: #e8f3fa; }
+.demo-five-photo-form .demo-five-orientation-guidance { margin: 24px 0 -12px; padding: 12px 14px; border-left: 4px solid #13769d; border-radius: 6px; background: #e8f3fa; color: #173f5f; }
 .demo-five-photo-form .demo-five-categories { display: grid; gap: 16px; margin-top: 28px; }
 .demo-five-photo-form .demo-five-category { border: 1px solid #d2dce4; border-radius: 12px; overflow: hidden; }
 .demo-five-photo-form .demo-five-category summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; cursor: pointer; padding: 18px; background: #f3f7fa; }

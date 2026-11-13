@@ -67,9 +67,9 @@ function rejects(result) {
 test("category choices expose the approved stable photo-type values", () => {
   assert.deepEqual(PHOTO_CATEGORIES, ["exterior", "interior", "mechanical", "condition"]);
   const expected = {
-    exterior: ["front", "rear", "sides", "roof", "yard", "driveway", "outbuildings", "damage", "other"],
-    interior: ["living_room", "kitchen", "hallway_room_layout", "bedroom", "bathroom", "basement", "attic", "garage", "under_sink", "damage", "other"],
-    mechanical: ["hvac", "water_heater", "electrical_panel", "plumbing", "other"],
+    exterior: ["front", "front_and_driveway", "side_yard", "front_and_side_angle", "property_boundary_and_fence", "rear", "exterior_ac_condenser", "exterior_electrical_service", "front_left_curb_view", "right_side_elevation", "backyard_and_rear_elevation", "roof_soffit_and_gutters", "other"],
+    interior: ["living_room", "dining_area", "hallway_room_layout", "kitchen", "kitchen_under_sink_plumbing", "primary_bedroom", "second_bedroom", "bathroom", "bathroom_vanity_plumbing", "laundry_room", "entry_foyer", "living_room_reverse_view", "dining_room_reverse_view", "kitchen_wide_view", "kitchen_appliance_wall", "kitchen_cabinets_and_counters", "primary_bedroom_reverse_view", "primary_bedroom_closet", "second_bedroom_reverse_view", "bathroom_tub_and_shower", "hallway_linen_storage", "mudroom_and_back_entry", "basement_stair_access", "laundry_reverse_view", "basement", "basement_overview", "basement_stair_landing", "foundation_walls", "floor_drain_condition", "basement_window_and_egress", "basement_storage_area", "support_beam_and_columns", "basement_exterior_exit", "attic", "garage", "other"],
+    mechanical: ["furnace_and_ductwork", "modern_furnace", "water_heater", "water_softener", "well_pump_system", "breaker_panel", "main_water_shutoff", "sump_pump", "hvac_service_connections", "plumbing_distribution", "other"],
     condition: ["general_condition", "damage", "repair_needed", "other"],
   };
   assert.deepEqual(PHOTO_TYPES, expected);
@@ -81,6 +81,11 @@ test("category choices expose the approved stable photo-type values", () => {
   }
   assert.deepEqual(getPhotoTypeOptions("spoofed"), []);
   assert.deepEqual(getPhotoTypeOptions("toString"), []);
+  for (const legacy of [
+    { category: "exterior", photoType: "sides" }, { category: "exterior", photoType: "outbuildings" },
+    { category: "interior", photoType: "bedroom" }, { category: "interior", photoType: "under_sink" },
+    { category: "mechanical", photoType: "hvac" }, { category: "mechanical", photoType: "electrical_panel" },
+  ]) assert.equal(validateDraftPhoto(photo(legacy)).ok, true, `legacy ${legacy.category}:${legacy.photoType}`);
 });
 
 test("draft validation normalizes text, preserves blobs, and accepts either condition status", () => {
@@ -91,6 +96,7 @@ test("draft validation normalizes text, preserves blobs, and accepts either cond
   assert.equal(result.value.description, "Clear view");
   assert.equal(result.value.blob, input.blob);
   assert.equal(validateDraftPhoto(photo({ conditionStatus: "damage" })).ok, true);
+  assert.equal(validateDraftPhoto(photo({ width: 800, height: 1200 })).ok, true);
   assert.equal(validateDraftPhoto(photo({ description: undefined })).value.description, "");
   assert.equal(input.photoName, "  Front elevation  ");
 });
