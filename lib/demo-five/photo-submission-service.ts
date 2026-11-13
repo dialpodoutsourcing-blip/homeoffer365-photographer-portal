@@ -201,6 +201,7 @@ export async function preparePhotoSubmission(input: unknown, dependencies: Photo
       fail(400, "INVALID_INPUT", "Send photo metadata without blobs or object paths.");
     }
     let session = await deps.operations.findSession(key);
+    let reusedSession = session !== null;
     const validateRetry = async (s: UploadSession) => {
       if (!s.preparedManifest || comparable(canonicalManifest(s.preparedManifest)) !== comparable(manifest)) {
         fail(409, "MANIFEST_CHANGED", "This idempotency key belongs to a different photo manifest.");
@@ -231,13 +232,32 @@ export async function preparePhotoSubmission(input: unknown, dependencies: Photo
         if (errorCode(error) !== "23505") throw error;
         session = await deps.operations.findSession(key);
         if (!session) throw error;
+        reusedSession = true;
         await validateRetry(session);
       }
     }
-    // A completed session can still be returned after a lost response; finalize
-    // will return its committed result. No upload overwrite is permitted.
+    // Existing objects cannot receive a new non-upsert signed token. Verify
+    // partial uploads before marking them complete; finalized sessions already
+    // passed verification and must recover their committed result without uploads.
     const uploads = [];
-    for (const path of session.expectedPaths) uploads.push({ ...path, signedToken: await deps.operations.signUpload(path.objectPath) });
+    const metadata = new Map(manifest.photos.map(photo => [photo.clientPhotoId, photo]));
+    for (const path of session.expectedPaths) {
+      if (session.status === "finalized") {
+        uploads.push({ ...path, alreadyUploaded: true, signedToken: null });
+        continue;
+      }
+      const object = reusedSession ? await deps.operations.inspectObject(path.objectPath) : null;
+      if (object) {
+        const photo = metadata.get(path.clientPhotoId);
+        if (!photo || object.mimeType !== photo.mimeType || object.byteSize !== photo.byteSize) {
+          await cleanup(session, "failed", deps);
+          fail(422, "OBJECT_MISMATCH", "An uploaded photo does not match its prepared type or size. Prepare a new submission.");
+        }
+        uploads.push({ ...path, alreadyUploaded: true, signedToken: null });
+      } else {
+        uploads.push({ ...path, alreadyUploaded: false, signedToken: await deps.operations.signUpload(path.objectPath) });
+      }
+    }
     return { sessionId: session.id, idempotencyKey: session.idempotencyKey, uploads };
   });
 }
@@ -253,7 +273,7 @@ export async function finalizePhotoSubmission(input: unknown, dependencies: Phot
     if (comparable(manifest) !== comparable(canonicalManifest(session.preparedManifest))) {
       fail(409, "MANIFEST_CHANGED", "Uploaded metadata does not match the prepared manifest.");
     }
-    const submittedPaths = new Map((input.photos as Record<string, unknown>[]).map(p => [p.clientPhotoId, p.objectPath]));
+    const submittedPaths = new Map((input.photos as Record<string, unknown>[]).map(p => [(p.clientPhotoId as string).trim(), p.objectPath]));
     const expected = new Map(session.expectedPaths.map(p => [p.clientPhotoId, p.objectPath]));
     if (expected.size !== manifest.photos.length || new Set(expected.values()).size !== expected.size ||
       manifest.photos.some(p => typeof submittedPaths.get(p.clientPhotoId) !== "string" || submittedPaths.get(p.clientPhotoId) !== expected.get(p.clientPhotoId))) {

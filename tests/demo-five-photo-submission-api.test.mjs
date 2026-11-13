@@ -38,7 +38,11 @@ function fixture() {
       if ([...sessions.values()].some(row => row.idempotencyKey === s.idempotencyKey)) throw { code: "23505" };
       sessions.set(s.id, structuredClone(s)); return structuredClone(s);
     },
-    async signUpload(path) { signed.push(path); return `private-token-${signed.length}`; },
+    async signUpload(path) {
+      // Non-upsert signing rejects paths that already exist in Storage.
+      if (objects.has(path)) throw { code: "Duplicate", message: "The resource already exists" };
+      signed.push(path); return `private-token-${signed.length}`;
+    },
     async inspectObject(path) { return objects.get(path) ?? null; },
     async markTerminal(id, key, status) {
       const s = sessions.get(id);
@@ -59,7 +63,7 @@ function fixture() {
 const request = body => new Request("http://localhost/api/demo-five/submissions", { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body) });
 async function prepared(f = fixture(), input = manifest()) {
   const result = await preparePhotoSubmission(input, f.dependencies);
-  const photos = input.photos.map(p => ({ ...p, objectPath: result.uploads.find(u => u.clientPhotoId === p.clientPhotoId).objectPath }));
+  const photos = input.photos.map(p => ({ ...p, objectPath: result.uploads.find(u => u.clientPhotoId === p.clientPhotoId.trim()).objectPath }));
   photos.forEach(p => f.objects.set(p.objectPath, { mimeType: p.mimeType, byteSize: p.byteSize }));
   return { f, input, result, finalInput: { sessionId: result.sessionId, idempotencyKey: result.idempotencyKey, photos, notApplicable: input.notApplicable } };
 }
@@ -116,6 +120,53 @@ test("prepare reuses case-insensitive email, updates contact/payment and retries
   assert.equal(second.sessionId, first.sessionId); assert.equal(f.sessions.size, 1); assert.equal(f.people.size, 1);
   assert.equal(f.people.get(id).phone, "456"); assert.equal(f.people.get(id).paymentUrl, "https://example.com/new");
   assert.deepEqual(second.uploads.map(u => u.objectPath), first.uploads.map(u => u.objectPath));
+});
+
+test("prepare after partial upload preserves verified objects and signs only missing paths", async () => {
+  const { f, input, result } = await prepared();
+  const missing = result.uploads.slice(3);
+  missing.forEach(u => f.objects.delete(u.objectPath));
+  f.signed.length = 0;
+  const retry = await preparePhotoSubmission(input, f.dependencies);
+  assert.equal(retry.sessionId, result.sessionId);
+  assert.deepEqual(retry.uploads.map(u => u.objectPath), result.uploads.map(u => u.objectPath));
+  assert.deepEqual(f.signed, missing.map(u => u.objectPath));
+  for (const u of retry.uploads.slice(0, 3)) {
+    assert.equal(u.alreadyUploaded, true); assert.equal(u.signedToken, null);
+  }
+  for (const u of retry.uploads.slice(3)) {
+    assert.equal(u.alreadyUploaded, false); assert.match(u.signedToken, /^private-token-/);
+  }
+});
+
+test("prepare after finalization returns uploaded paths without signing and finalize retry still succeeds", async () => {
+  const { f, input, result, finalInput } = await prepared();
+  const finalized = await finalizePhotoSubmission(finalInput, f.dependencies);
+  f.signed.length = 0;
+  const retry = await preparePhotoSubmission(input, f.dependencies);
+  assert.equal(retry.sessionId, result.sessionId); assert.equal(f.signed.length, 0);
+  assert.ok(retry.uploads.every(u => u.alreadyUploaded === true && u.signedToken === null));
+  assert.deepEqual(await finalizePhotoSubmission(finalInput, f.dependencies), finalized);
+});
+
+test("prepare retries reject mismatched existing object metadata instead of marking it uploaded", async () => {
+  for (const metadata of [{ mimeType: "image/jpeg", byteSize: 1000 }, { mimeType: "image/webp", byteSize: 999 }]) {
+    const { f, input, result } = await prepared();
+    f.objects.set(result.uploads[0].objectPath, metadata);
+    const response = await handlePreparePhotoSubmission(request(input), f.dependencies);
+    assert.equal(response.status, 422);
+    assert.equal((await response.json()).code, "OBJECT_MISMATCH");
+    assert.equal(f.sessions.get(result.sessionId).status, "failed");
+  }
+});
+
+test("whitespace-padded client IDs round-trip through prepare and finalize with normalized RPC metadata", async () => {
+  const input = manifest(); input.photos[0].clientPhotoId = "  photo-0 \t";
+  const { f, result, finalInput } = await prepared(fixture(), input);
+  assert.equal(result.uploads[0].clientPhotoId, "photo-0");
+  const finalized = await finalizePhotoSubmission(finalInput, f.dependencies);
+  assert.equal(finalized.photoCount, 10);
+  assert.equal(f.finalized[0].photos[0].clientPhotoId, "photo-0");
 });
 
 for (const [name, mutate] of [
