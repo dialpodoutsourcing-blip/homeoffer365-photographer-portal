@@ -381,6 +381,9 @@ test("landing submission posts to the API and shows honest pending and confirmat
   assert.match(form, /event\.key === "ArrowUp"/);
   assert.match(form, /event\.key === "Enter"/);
   assert.match(form, /event\.key === "Escape"/);
+  assert.match(form, /tabIndex=\{-1\}/);
+  assert.match(form, /onClick=/);
+  assert.match(form, /setAddress\(""\)/);
   assert.match(form, /name="driveLink"/);
   assert.match(form, /name="checklistComplete"/);
   assert.equal([...form.matchAll(/data-lpignore="true"/g)].length, 5);

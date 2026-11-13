@@ -51,6 +51,18 @@ test("address composition replaces a partial locality after a comma", () => {
   assert.equal(applyAddressLocality("88 Market St, Lanc", lancaster), "88 Market St, Lancaster, PA 17603");
 });
 
+test("address composition preserves unit details before the locality query", () => {
+  const lebanon = PENNSYLVANIA_SERVICE_LOCALITIES[0];
+  assert.equal(applyAddressLocality("123 Main St, Apt 2, LeB", lebanon), "123 Main St, Apt 2, Lebanon, PA 17042");
+});
+
+test("address composition replaces a standalone city or ZIP query", () => {
+  const lebanon = PENNSYLVANIA_SERVICE_LOCALITIES[0];
+  const bethlehem = PENNSYLVANIA_SERVICE_LOCALITIES[6];
+  assert.equal(applyAddressLocality("le", lebanon), "Lebanon, PA 17042");
+  assert.equal(applyAddressLocality("180", bethlehem), "Bethlehem, PA 18018");
+});
+
 test("address composition preserves unmatched free-form street text", () => {
   const york = PENNSYLVANIA_SERVICE_LOCALITIES[4];
   assert.equal(applyAddressLocality("  456 West Princess Street  ", york), "456 West Princess Street, York, PA 17401");

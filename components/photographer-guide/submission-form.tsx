@@ -83,6 +83,7 @@ export function SubmissionForm({ showChecklist = true }: { showChecklist?: boole
       });
       const result = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(result?.error || "We could not save your submission. Please try again.");
+      setAddress("");
       setSubmitted(true);
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "We could not save your submission. Please try again.");
@@ -105,7 +106,7 @@ export function SubmissionForm({ showChecklist = true }: { showChecklist?: boole
           <input id="property-address" suppressHydrationWarning data-lpignore="true" data-1p-ignore type="text" name="propertyAddress" autoComplete="street-address" maxLength={500} required disabled={submitting} value={address} role="combobox" aria-autocomplete="list" aria-expanded={suggestionsOpen && addressSuggestions.length > 0} aria-controls={addressListId} aria-activedescendant={suggestionsOpen && activeSuggestion >= 0 ? `${addressListId}-${activeSuggestion}` : undefined} onChange={(event) => { setAddress(event.target.value); setSuggestionsOpen(true); setActiveSuggestion(-1); }} onFocus={() => setSuggestionsOpen(addressSuggestions.length > 0)} onBlur={closeSuggestions} onKeyDown={handleAddressKeyDown} />
           <small>Suggested service areas in Pennsylvania</small>
           {suggestionsOpen && addressSuggestions.length > 0 && <div id={addressListId} className="landing-address-options" role="listbox" aria-label="Pennsylvania service areas">
-            {addressSuggestions.map((locality, index) => <button id={`${addressListId}-${index}`} className={`landing-address-option${index === activeSuggestion ? " is-active" : ""}`} type="button" role="option" aria-selected={index === activeSuggestion} key={`${locality.city}-${locality.zip}`} onPointerDown={(event) => { event.preventDefault(); selectLocality(locality); }}>{formatAddressLocality(locality)}</button>)}
+            {addressSuggestions.map((locality, index) => <button id={`${addressListId}-${index}`} className={`landing-address-option${index === activeSuggestion ? " is-active" : ""}`} type="button" role="option" aria-selected={index === activeSuggestion} tabIndex={-1} key={`${locality.city}-${locality.zip}`} onPointerDown={(event) => { event.preventDefault(); selectLocality(locality); }} onClick={() => selectLocality(locality)}>{formatAddressLocality(locality)}</button>)}
           </div>}
         </div>
         <label className="landing-drive-field" suppressHydrationWarning>Google Drive Link<input suppressHydrationWarning data-lpignore="true" data-1p-ignore type="url" name="driveLink" inputMode="url" autoComplete="url" placeholder="https://drive.google.com/drive/folders/..." maxLength={2048} required disabled={submitting} /></label>

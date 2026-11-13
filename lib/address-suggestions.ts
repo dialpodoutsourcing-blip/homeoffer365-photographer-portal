@@ -33,7 +33,15 @@ export function formatAddressLocality(locality: AddressLocality): string {
 }
 
 export function applyAddressLocality(input: string, locality: AddressLocality): string {
-  const street = input.split(",", 1)[0].trim();
   const formattedLocality = formatAddressLocality(locality);
-  return street ? `${street}, ${formattedLocality}` : formattedLocality;
+  const trimmedInput = input.trim();
+  const normalizedInput = trimmedInput.toLocaleLowerCase();
+  const isStandaloneQuery = !trimmedInput.includes(",") && normalizedInput.length >= 2 && (
+    locality.city.toLocaleLowerCase().startsWith(normalizedInput) || locality.zip.startsWith(normalizedInput)
+  );
+  if (isStandaloneQuery) return formattedLocality;
+
+  const queryBoundary = trimmedInput.lastIndexOf(",");
+  const streetAndUnit = (queryBoundary >= 0 ? trimmedInput.slice(0, queryBoundary) : trimmedInput).trim();
+  return streetAndUnit ? `${streetAndUnit}, ${formattedLocality}` : formattedLocality;
 }
