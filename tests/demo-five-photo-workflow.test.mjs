@@ -88,14 +88,16 @@ test("category choices expose the approved stable photo-type values", () => {
   ]) assert.equal(validateDraftPhoto(photo(legacy)).ok, true, `legacy ${legacy.category}:${legacy.photoType}`);
 });
 
-test("draft validation normalizes text, preserves blobs, and accepts either condition status", () => {
+test("draft validation normalizes text, preserves blobs, and accepts every inspector condition status", () => {
   const input = photo();
   const result = validateDraftPhoto(input);
   assert.equal(result.ok, true);
   assert.equal(result.value.photoName, "Front elevation");
   assert.equal(result.value.description, "Clear view");
   assert.equal(result.value.blob, input.blob);
-  assert.equal(validateDraftPhoto(photo({ conditionStatus: "damage" })).ok, true);
+  for (const conditionStatus of ["good_condition", "satisfactory", "needs_maintenance", "damage", "non_functional", "not_accessible"]) {
+    assert.equal(validateDraftPhoto(photo({ conditionStatus })).ok, true, conditionStatus);
+  }
   assert.equal(validateDraftPhoto(photo({ width: 800, height: 1200 })).ok, true);
   assert.equal(validateDraftPhoto(photo({ description: undefined })).value.description, "");
   assert.equal(input.photoName, "  Front elevation  ");
@@ -110,6 +112,9 @@ test("draft validation rejects spoofed category/type/status combinations", () =>
     { category: "mechanical", photoType: "roof" },
     { category: "condition", photoType: "hvac" },
     { conditionStatus: "n/a" },
+    { conditionStatus: "excellent" },
+    { conditionStatus: "poor" },
+    { conditionStatus: 5 },
     { conditionStatus: "good" },
     { conditionStatus: "" },
   ]) rejects(validateDraftPhoto(photo(invalid)));

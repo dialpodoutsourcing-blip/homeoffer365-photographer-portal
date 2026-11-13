@@ -22,11 +22,20 @@ export const OPTIONAL_FEATURES = {
 } as const;
 
 export const PHOTO_MINIMUMS = { exterior: 4, interior: 4, mechanical: 1, condition: 1 } as const;
+export const CONDITION_STATUSES = ["good_condition", "satisfactory", "needs_maintenance", "damage", "non_functional", "not_accessible"] as const;
+export const CONDITION_STATUS_DETAILS = {
+  good_condition: { label: "Good Condition", description: "Functional with no visible concerns." },
+  satisfactory: { label: "Satisfactory", description: "Functional with normal wear for its age." },
+  needs_maintenance: { label: "Needs Maintenance", description: "Usable, but maintenance or attention is recommended." },
+  damage: { label: "Damaged", description: "Visible damage that requires repair." },
+  non_functional: { label: "Non-Functional / Unusable", description: "Not working, unsafe, or not usable as intended." },
+  not_accessible: { label: "Not Accessible", description: "The area or item could not be reached or its condition could not be confirmed." },
+} as const satisfies Record<(typeof CONDITION_STATUSES)[number], { label: string; description: string }>;
 
 export type PhotoCategory = (typeof PHOTO_CATEGORIES)[number];
 type SelectablePhotoType = (typeof PHOTO_TYPES)[PhotoCategory][number];
 export type PhotoType = SelectablePhotoType | (typeof LEGACY_PHOTO_TYPES)[PhotoCategory][number];
-export type ConditionStatus = "good_condition" | "damage";
+export type ConditionStatus = (typeof CONDITION_STATUSES)[number];
 
 export const PHOTO_TYPE_LABELS: { [Type in SelectablePhotoType]: string } = {
   front: "Front exterior",
@@ -146,6 +155,10 @@ function category(value: unknown): value is PhotoCategory {
   return typeof value === "string" && Object.hasOwn(PHOTO_TYPES, value);
 }
 
+function conditionStatus(value: unknown): value is ConditionStatus {
+  return typeof value === "string" && (CONDITION_STATUSES as readonly string[]).includes(value);
+}
+
 function text(value: unknown, limit: number): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim();
@@ -176,8 +189,8 @@ function validatePhotoMetadata(input: unknown): ValidationResult<PhotoMetadata> 
   if (!category(input.category) || !validPhotoType(input.category, input.photoType)) {
     return { ok: false, error: "Choose a photo type that belongs to its category." };
   }
-  if (input.conditionStatus !== "good_condition" && input.conditionStatus !== "damage") {
-    return { ok: false, error: "Choose Good Condition or Damage for each photo." };
+  if (!conditionStatus(input.conditionStatus)) {
+    return { ok: false, error: "Choose a valid condition status for each photo." };
   }
   if (!capturedAt || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(capturedAt)) {
     return { ok: false, error: "A valid ISO capture timestamp is required." };

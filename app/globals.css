@@ -984,6 +984,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .demo-five-photo-form label { display: grid; gap: 7px; font-size: 14px; font-weight: 600; }
 .demo-five-photo-form input:not([type="checkbox"]):not([type="file"]), .demo-five-photo-form select, .demo-five-photo-form textarea { width: 100%; min-width: 0; border: 1px solid #c7d1da; border-radius: 8px; padding: 12px; background: #fff; color: #172b3a; font: inherit; }
 .demo-five-photo-form textarea { min-height: 90px; resize: vertical; }
+.demo-five-photo-form .demo-five-condition-help { margin: -4px 0 4px; padding: 9px 11px; border-radius: 7px; background: #f3f7fa; color: #40586a; font-size: 13px; }
 .demo-five-photo-form input:focus-visible, .demo-five-photo-form select:focus-visible, .demo-five-photo-form textarea:focus-visible, .demo-five-photo-form button:focus-visible, .demo-five-photo-form summary:focus-visible { outline: 3px solid #13769d; outline-offset: 3px; }
 .demo-five-photo-form button { min-height: 44px; padding: 10px 14px; border: 1px solid #b8c9d6; border-radius: 8px; color: #143f60; background: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
 .demo-five-photo-form button:disabled { opacity: .55; cursor: not-allowed; }

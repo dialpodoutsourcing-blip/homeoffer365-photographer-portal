@@ -309,7 +309,7 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
   });
   try {
     const { DemoFivePhotoCategory } = await import("../components/photographer-guide/demo-five-photo-category.tsx");
-    const { photoLabel } = await import("../components/photographer-guide/demo-five-photo-editor.tsx");
+    const { DemoFivePhotoEditor, photoLabel } = await import("../components/photographer-guide/demo-five-photo-editor.tsx");
     const { DemoFiveSubmissionForm } = await import("../components/photographer-guide/demo-five-submission-form.tsx");
     const formHtml = renderToStaticMarkup(createElement(DemoFiveSubmissionForm, { storageOrigin: "https://storage.example.com" }));
     assert.match(formHtml, /Take all photos horizontally \(landscape orientation\)\.[\s\S]*demo-five-categories/);
@@ -322,6 +322,14 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
       "Hallway and room layout", "Kitchen under-sink plumbing", "Basement window and egress",
       "Furnace and ductwork", "HVAC service connections",
     ]);
+    const inaccessiblePhoto = { ...draft().photos[4], photoName: "Blocked basement access", conditionStatus: "not_accessible" };
+    const editorHtml = renderToStaticMarkup(createElement(DemoFivePhotoEditor, {
+      edit: { image: inaccessiblePhoto, category: "interior", existing: inaccessiblePhoto, capturedAt: inaccessiblePhoto.capturedAt, viewOnly: false },
+      async onSave() {}, onClose() {},
+    }));
+    for (const label of ["Good Condition", "Satisfactory", "Needs Maintenance", "Damaged", "Non-Functional / Unusable", "Not Accessible"]) assert.match(editorHtml, new RegExp(`>${label}<`));
+    assert.match(editorHtml, /The area or item could not be reached or its condition could not be confirmed\./);
+    assert.match(editorHtml, /Explain why the area or item was not accessible in Description\./);
     const props = { category: "exterior", photos: draft().photos.slice(0, 2), notApplicable: [], disabled: false,
       onCapture() {}, onView() {}, onRemove() {}, onNotApplicable() {}, onCancelCapture() {} };
     const html = renderToStaticMarkup(createElement(DemoFivePhotoCategory, props));

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ChangeEvent } from "react";
 import { OPTIONAL_FEATURES, PHOTO_MINIMUMS, type DraftPhoto, type PhotoCategory, type NotApplicableSelection, type PhotoType } from "@/lib/demo-five/photo-workflow";
-import { DraftPhotoPreview, photoLabel } from "./demo-five-photo-editor";
+import { conditionLabel, DraftPhotoPreview, photoLabel } from "./demo-five-photo-editor";
 
 type Props = {
   category: PhotoCategory; photos: DraftPhoto[]; notApplicable: NotApplicableSelection[]; disabled: boolean;
@@ -46,7 +46,7 @@ export function DemoFivePhotoCategory({ category, photos, notApplicable, disable
       </details>}
       <ul className="demo-five-thumbnails">{photos.map(photo => <li key={photo.clientPhotoId}>
         <DraftPhotoPreview blob={photo.blob} name={photo.photoName} />
-        <strong>{photo.photoName}</strong><small>{photoLabel(photo.photoType)} · {photoLabel(photo.conditionStatus)}</small>
+        <strong>{photo.photoName}</strong><small>{photoLabel(photo.photoType)} · {conditionLabel(photo.conditionStatus)}</small>
         <div className="demo-five-actions">
           <button type="button" disabled={disabled} onClick={() => onView(photo)} aria-label={`View ${photo.photoName}`}>View</button>
           <button type="button" disabled={disabled} aria-label={`Retake ${photo.photoName}`} onClick={event => { trigger.current = event.currentTarget; retake.current = photo; camera.current?.click(); }}>Retake</button>

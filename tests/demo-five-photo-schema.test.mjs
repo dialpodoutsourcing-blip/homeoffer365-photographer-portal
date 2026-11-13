@@ -3,13 +3,15 @@ import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import test, { before, after } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
-import { PHOTO_TYPES } from "../lib/demo-five/photo-workflow.ts";
+import { CONDITION_STATUSES, PHOTO_TYPES } from "../lib/demo-five/photo-workflow.ts";
 
 const migrationUrl = new URL("../supabase/migrations/202611130001_demo_five_photo_uploads.sql", import.meta.url);
 const sampleTypesMigrationUrl = new URL("../supabase/migrations/202611130002_demo_five_sample_photo_types.sql", import.meta.url);
+const conditionStatusesMigrationUrl = new URL("../supabase/migrations/202611130003_demo_five_condition_statuses.sql", import.meta.url);
 let db;
 let migration;
 let sampleTypesMigration;
+let conditionStatusesMigration;
 const bootstrap = `create role anon; create role authenticated; create role service_role;
   create schema storage;
   create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);`;
@@ -17,10 +19,12 @@ const bootstrap = `create role anon; create role authenticated; create role serv
 before(async () => {
   migration = await readFile(migrationUrl, "utf8");
   sampleTypesMigration = await readFile(sampleTypesMigrationUrl, "utf8");
+  conditionStatusesMigration = await readFile(conditionStatusesMigrationUrl, "utf8");
   db = new PGlite();
   await db.exec(bootstrap);
   await db.exec(migration);
   await db.exec(sampleTypesMigration);
+  await db.exec(conditionStatusesMigration);
 });
 after(async () => { await db?.close(); });
 
@@ -92,6 +96,21 @@ test("database classification accepts every selectable photo type and preserves 
   }
 });
 
+test("database classification accepts every inspector condition status and rejects invented statuses", async () => {
+  const photographerId = randomUUID();
+  await db.query(`insert into photographers (id,name,email,phone,payment_method,payment_url)
+    values ($1,'Conditions',$2,'123','Invoice','https://example.com/pay')`, [photographerId, `${photographerId}@example.com`]);
+  for (const conditionStatus of CONDITION_STATUSES) {
+    await db.query(`insert into photographer_property_photos
+      (photographer_id,property_address,photo,photo_name,description,photo_category,photo_type,condition_status)
+      values ($1,'123 Example Street',$2,$3,'','condition','general_condition',$4)`,
+    [photographerId, `${conditionStatus}.webp`, conditionStatus, conditionStatus]);
+  }
+  await assert.rejects(db.query(`insert into photographer_property_photos
+    (photographer_id,property_address,photo,photo_name,description,photo_category,photo_type,condition_status)
+    values ($1,'123 Example Street','excellent.webp','Excellent','','condition','general_condition','excellent')`, [photographerId]), /check constraint/);
+});
+
 test("migration preserves populated owner tables and can be applied again", async (t) => {
   const legacy = new PGlite();
   t.after(() => legacy.close());
@@ -107,8 +126,10 @@ test("migration preserves populated owner tables and can be applied again", asyn
   `);
   await legacy.exec(migration);
   await legacy.exec(sampleTypesMigration);
+  await legacy.exec(conditionStatusesMigration);
   await legacy.exec(migration);
   await legacy.exec(sampleTypesMigration);
+  await legacy.exec(conditionStatusesMigration);
   assert.deepEqual((await legacy.query("select photo_name,photo_category,photo_type,condition_status from photographer_property_photos")).rows,
     [{ photo_name: "Legacy photo", photo_category: "other", photo_type: null, condition_status: null }]);
   assert.equal((await legacy.query("select has_table_privilege('anon','photographers','SELECT') as allowed")).rows[0].allowed, false);
