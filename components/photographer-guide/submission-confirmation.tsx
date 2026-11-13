@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, Handshake, House, X } from "lucide-react";
+import { Camera, Handshake, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useRef } from "react";
 
@@ -53,7 +53,7 @@ export function SubmissionConfirmation({ onClose }: { onClose: () => void }) {
         <div><strong>Thank You!</strong><p>Your submission has been received successfully.</p></div>
       </div>
 
-      <p className="submission-appreciation">Thank you for your time, effort, and professional photography services. We truly appreciate your work.</p>
+      <p className="submission-appreciation"><span className="submission-appreciation-line">Thank you for your time, effort, and excellent photography.</span><span className="submission-appreciation-line">We truly appreciate your work.</span></p>
 
       <div className="submission-next-steps">
         <div><Camera aria-hidden="true" /><p>Our team will review your photos and videos, and <strong>your payment will be processed promptly</strong> once everything is approved.</p></div>
@@ -61,7 +61,7 @@ export function SubmissionConfirmation({ onClose }: { onClose: () => void }) {
       </div>
 
       <footer className="submission-confirmation-footer">
-        <span className="submission-confirmation-house-mark"><House aria-hidden="true" /></span>
+        <Image className="submission-confirmation-brand-logo" src="/images/brand/home-offer-365-logo.png" width={768} height={296} alt="HomeOffer365" />
         <i aria-hidden="true" />
         <div><strong>Ashley</strong><span>Home Offer 365 Team</span></div>
       </footer>
