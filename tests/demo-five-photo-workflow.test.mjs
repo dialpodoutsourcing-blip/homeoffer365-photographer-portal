@@ -65,12 +65,13 @@ function rejects(result) {
 }
 
 test("category choices expose the approved stable photo-type values", () => {
-  assert.deepEqual(PHOTO_CATEGORIES, ["exterior", "interior", "mechanical", "condition"]);
+  assert.deepEqual(PHOTO_CATEGORIES, ["exterior", "interior", "mechanical", "condition", "other"]);
   const expected = {
     exterior: ["front", "front_and_driveway", "side_yard", "front_and_side_angle", "property_boundary_and_fence", "rear", "exterior_ac_condenser", "exterior_electrical_service", "front_left_curb_view", "right_side_elevation", "backyard_and_rear_elevation", "roof_soffit_and_gutters", "other"],
     interior: ["living_room", "dining_area", "hallway_room_layout", "kitchen", "kitchen_under_sink_plumbing", "primary_bedroom", "second_bedroom", "bathroom", "bathroom_vanity_plumbing", "laundry_room", "entry_foyer", "living_room_reverse_view", "dining_room_reverse_view", "kitchen_wide_view", "kitchen_appliance_wall", "kitchen_cabinets_and_counters", "primary_bedroom_reverse_view", "primary_bedroom_closet", "second_bedroom_reverse_view", "bathroom_tub_and_shower", "hallway_linen_storage", "mudroom_and_back_entry", "basement_stair_access", "laundry_reverse_view", "basement", "basement_overview", "basement_stair_landing", "foundation_walls", "floor_drain_condition", "basement_window_and_egress", "basement_storage_area", "support_beam_and_columns", "basement_exterior_exit", "attic", "garage", "other"],
     mechanical: ["furnace_and_ductwork", "modern_furnace", "water_heater", "water_softener", "well_pump_system", "breaker_panel", "main_water_shutoff", "sump_pump", "hvac_service_connections", "plumbing_distribution", "other"],
     condition: ["general_condition", "damage", "repair_needed", "other"],
+    other: ["other"],
   };
   assert.deepEqual(PHOTO_TYPES, expected);
   for (const [category, options] of Object.entries(expected)) {
@@ -155,10 +156,10 @@ test("JSON manifest validation accepts photo metadata without blobs and omits bi
 });
 
 test("minimums count actual photos and allow multiple photos of the same type", () => {
-  assert.deepEqual(PHOTO_MINIMUMS, { exterior: 4, interior: 4, mechanical: 1, condition: 1 });
-  assert.deepEqual(countPhotosByCategory([]), { exterior: 0, interior: 0, mechanical: 0, condition: 0 });
+  assert.deepEqual(PHOTO_MINIMUMS, { exterior: 4, interior: 4, mechanical: 1, condition: 1, other: 0 });
+  assert.deepEqual(countPhotosByCategory([]), { exterior: 0, interior: 0, mechanical: 0, condition: 0, other: 0 });
   const photos = manifest().photos;
-  assert.deepEqual(countPhotosByCategory(photos), { exterior: 4, interior: 4, mechanical: 1, condition: 1 });
+  assert.deepEqual(countPhotosByCategory(photos), { exterior: 4, interior: 4, mechanical: 1, condition: 1, other: 0 });
   assert.equal(validatePhotoMinimums(photos).ok, true);
   for (const clientPhotoId of ["e1", "i1", "m1", "c1"]) {
     rejects(validatePhotoMinimums(photos.filter((item) => item.clientPhotoId !== clientPhotoId)));
@@ -168,7 +169,7 @@ test("minimums count actual photos and allow multiple photos of the same type", 
 test("N/A accepts only the approved feature/category pairs without lowering minimums", () => {
   assert.deepEqual(OPTIONAL_FEATURES, {
     exterior: [], interior: ["basement", "attic", "garage"],
-    mechanical: [], condition: [],
+    mechanical: [], condition: [], other: [],
   });
   const notApplicable = [
     { category: "interior", photoType: "basement" },
@@ -188,6 +189,20 @@ test("N/A accepts only the approved feature/category pairs without lowering mini
     { category: "toString", photoType: "roof" },
   ]) rejects(validateSubmissionManifest(manifest({ notApplicable: [pair] })));
   rejects(validateSubmissionManifest(manifest({ notApplicable: [notApplicable[0], notApplicable[0]] })));
+});
+
+test("Other accepts only its own type and never replaces required photos or permits N/A", () => {
+  const other = photo({ clientPhotoId: "other-1", category: "other", photoType: "other" });
+  assert.equal(validateDraftPhoto(other).ok, true);
+  for (const photoType of ["front", "kitchen", "hvac", "general_condition", "", "Other"]) {
+    rejects(validateDraftPhoto({ ...other, photoType }));
+  }
+  const photos = [...manifest().photos, other];
+  assert.deepEqual(countPhotosByCategory(photos), { exterior: 4, interior: 4, mechanical: 1, condition: 1, other: 1 });
+  assert.equal(validateSubmissionManifest(manifest({ photos })).ok, true);
+  rejects(validatePhotoMinimums(photos.filter(item => item.clientPhotoId !== "e1")));
+  rejects(validateSubmissionManifest(manifest({ notApplicable: [{ category: "other", photoType: "other" }] })));
+  rejects(validateDraftPhoto(photo({ category: "" })));
 });
 
 test("submission normalizes contact/address fields and lowercases photographer email", () => {

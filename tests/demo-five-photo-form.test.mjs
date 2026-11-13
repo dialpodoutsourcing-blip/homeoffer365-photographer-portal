@@ -114,6 +114,74 @@ async function formState() {
   return import(url.href);
 }
 
+test("wizard validates contact fields independently with existing text and email limits", async () => {
+  const { validateWizardStep } = await formState();
+  assert.equal(typeof validateWizardStep, "function");
+  const d = { ...draft(), propertyAddress: "", photos: [] };
+  d.photographer = { ...d.photographer, paymentMethod: "", paymentUrl: "" };
+  assert.equal(validateWizardStep(1, d).ok, true);
+  for (const [field, boundary] of [
+    ["name", "a".repeat(200)], ["email", `${"a".repeat(308)}@example.com`], ["phone", "1".repeat(50)],
+  ]) {
+    assert.equal(validateWizardStep(1, { ...d, photographer: { ...d.photographer, [field]: boundary } }).ok, true, field);
+    for (const value of [" ", `${boundary}a`]) assert.equal(validateWizardStep(1, { ...d, photographer: { ...d.photographer, [field]: value } }).ok, false, field);
+  }
+  for (const email of ["ada", "ada@example", "a b@example.com", "a@@example.com", `${"\u0130".repeat(308)}@example.com`]) {
+    assert.equal(validateWizardStep(1, { ...d, photographer: { ...d.photographer, email } }).ok, false);
+  }
+});
+
+test("wizard validates only payment fields in Step 2 using HTTPS without credentials", async () => {
+  const { validateWizardStep } = await formState();
+  assert.equal(typeof validateWizardStep, "function");
+  const d = draft(); d.photographer = { ...d.photographer, name: "", email: "", phone: "" };
+  assert.equal(validateWizardStep(2, { ...d, propertyAddress: "", photos: [] }).ok, true);
+  for (const [field, boundary] of [["paymentMethod", "a".repeat(100)], ["paymentUrl", `https://example.com/${"a".repeat(2028)}`]]) {
+    assert.equal(validateWizardStep(2, { ...d, photographer: { ...d.photographer, [field]: boundary } }).ok, true);
+    for (const value of [" ", `${boundary}a`]) assert.equal(validateWizardStep(2, { ...d, photographer: { ...d.photographer, [field]: value } }).ok, false);
+  }
+  for (const paymentUrl of ["http://example.com", "javascript:alert(1)", "https://", "https://user:secret@example.com", "/pay"]) {
+    assert.equal(validateWizardStep(2, { ...d, photographer: { ...d.photographer, paymentUrl } }).ok, false);
+  }
+});
+
+test("wizard Step 3 requires an address within its existing limit", async () => {
+  const { validateWizardStep } = await formState();
+  assert.equal(typeof validateWizardStep, "function");
+  const d = draft();
+  assert.equal(validateWizardStep(3, { ...d, propertyAddress: "a".repeat(500) }).ok, true);
+  for (const propertyAddress of ["", " ", "a".repeat(501)]) assert.equal(validateWizardStep(3, { ...d, propertyAddress }).ok, false);
+});
+
+test("draft restoration prioritizes property work then the earliest incomplete wizard step", async () => {
+  const { wizardStepForDraft } = await formState();
+  assert.equal(typeof wizardStepForDraft, "function");
+  const d = { ...draft(), propertyAddress: "", photos: [] };
+  const empty = { name: "", email: "", phone: "", paymentMethod: "", paymentUrl: "" };
+  assert.equal(wizardStepForDraft({ ...d, photographer: empty }), 1);
+  assert.equal(wizardStepForDraft({ ...d, photographer: { ...d.photographer, email: "invalid" } }), 1);
+  assert.equal(wizardStepForDraft({ ...d, photographer: { ...d.photographer, paymentUrl: "" } }), 2);
+  assert.equal(wizardStepForDraft(d), 3);
+  assert.equal(wizardStepForDraft({ ...d, propertyAddress: " ", photographer: empty }), 1);
+  assert.equal(wizardStepForDraft({ ...d, propertyAddress: "123 Main Street", photographer: empty }), 3);
+  assert.equal(wizardStepForDraft({ ...d, photos: draft().photos.slice(0, 1), photographer: empty }), 3);
+});
+
+test("editor category changes clear incompatible photo types and preserve shared Other type", async () => {
+  const { photoClassificationReducer } = await formState();
+  assert.equal(typeof photoClassificationReducer, "function");
+  const initial = { category: "exterior", photoType: "front" };
+  const interior = photoClassificationReducer(initial, { type: "category", category: "interior" });
+  assert.deepEqual(interior, { category: "interior", photoType: "" });
+  assert.deepEqual(initial, { category: "exterior", photoType: "front" }, "the saved classification must not mutate");
+  const kitchen = photoClassificationReducer(interior, { type: "photoType", photoType: "kitchen" });
+  assert.deepEqual(kitchen, { category: "interior", photoType: "kitchen" });
+  assert.deepEqual(photoClassificationReducer(kitchen, { type: "category", category: "interior" }), kitchen);
+  assert.deepEqual(photoClassificationReducer(kitchen, { type: "category", category: "other" }), { category: "other", photoType: "" });
+  assert.deepEqual(photoClassificationReducer({ category: "exterior", photoType: "other" }, { type: "category", category: "other" }), { category: "other", photoType: "other" });
+  assert.deepEqual(photoClassificationReducer(kitchen, { type: "category", category: "" }), { category: "", photoType: "" });
+});
+
 test("photo editor transitions cannot overlap capture, submission, or confirmation", async () => {
   const { initialPhotoFormState, photoFormReducer } = await formState();
   const photo = draft().photos[0], edit = { image: photo, existing: photo, category: photo.category, capturedAt: photo.capturedAt };
@@ -330,6 +398,27 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
     for (const label of ["Good Condition", "Satisfactory", "Needs Maintenance", "Damaged", "Non-Functional / Unusable", "Not Accessible"]) assert.match(editorHtml, new RegExp(`>${label}<`));
     assert.match(editorHtml, /The area or item could not be reached or its condition could not be confirmed\./);
     assert.match(editorHtml, /Explain why the area or item was not accessible in Description\./);
+    const renderEditor = edit => renderToStaticMarkup(createElement(DemoFivePhotoEditor, { edit, async onSave() {}, onClose() {} }));
+    const newEdit = { image: draft().photos[0], category: "", capturedAt: draft().photos[0].capturedAt };
+    const unclassified = renderEditor(newEdit);
+    const categorySelect = unclassified.match(/<select name="category"[^>]*>(.*?)<\/select>/s)?.[1];
+    assert.ok(categorySelect, "new captures must show category selection after capture");
+    assert.ok(unclassified.indexOf('name="category"') < unclassified.indexOf('name="photoType"'));
+    assert.match(unclassified, /<select name="category" required=""/);
+    assert.match(categorySelect, /<option value="" selected="">Choose a category<\/option>/);
+    for (const label of ["Exterior", "Interior", "Mechanical", "Condition", "Other"]) assert.match(categorySelect, new RegExp(`>${label}<`));
+    assert.equal((categorySelect.match(/<option\b/g) ?? []).length, 6);
+    assert.equal((unclassified.match(/<select name="photoType"[^>]*>(.*?)<\/select>/s)[1].match(/<option\b/g) ?? []).length, 1);
+    for (const [category, expectedType, unexpectedType] of [["exterior", "front", "kitchen"], ["interior", "kitchen", "front"], ["mechanical", "water_heater", "front"], ["condition", "general_condition", "front"], ["other", "other", "front"]]) {
+      const html = renderEditor({ ...newEdit, category });
+      const types = html.match(/<select name="photoType"[^>]*>(.*?)<\/select>/s)[1];
+      assert.match(types, new RegExp(`value="${expectedType}"`));
+      assert.doesNotMatch(types, new RegExp(`value="${unexpectedType}"`));
+    }
+    const existing = { ...draft().photos[4], photoType: "kitchen" };
+    const retake = renderEditor({ ...newEdit, category: "", existing });
+    assert.match(retake, /<option value="interior" selected="">Interior<\/option>/);
+    assert.match(retake, /<option value="kitchen" selected="">Kitchen<\/option>/);
     const props = { category: "exterior", photos: draft().photos.slice(0, 2), notApplicable: [], disabled: false,
       onCapture() {}, onView() {}, onRemove() {}, onNotApplicable() {}, onCancelCapture() {} };
     const html = renderToStaticMarkup(createElement(DemoFivePhotoCategory, props));
