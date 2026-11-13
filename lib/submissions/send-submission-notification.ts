@@ -9,7 +9,7 @@ type NotificationOptions = {
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const FROM = "Home Offer 365 Photographer Portal <notifications@send.homeoffer365.com>";
 const TO = ["info@michaelpid.com"];
-const CC = ["dialpodoutsourcing@gmail.com"];
+const CC = ["dialpodoutsourcing@gmail.com", "admin@homeoffer365.com"];
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ({

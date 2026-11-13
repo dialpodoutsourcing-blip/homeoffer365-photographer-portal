@@ -30,7 +30,7 @@ test("sendSubmissionNotification posts a safe team email to Resend", async () =>
   const payload = JSON.parse(request.init.body);
   assert.equal(payload.from, "Home Offer 365 Photographer Portal <notifications@send.homeoffer365.com>");
   assert.deepEqual(payload.to, ["info@michaelpid.com"]);
-  assert.deepEqual(payload.cc, ["dialpodoutsourcing@gmail.com"]);
+  assert.deepEqual(payload.cc, ["dialpodoutsourcing@gmail.com", "admin@homeoffer365.com"]);
   assert.equal(payload.subject, "New photographer submission — 123 Main & Market, Philadelphia, PA");
   assert.match(payload.text, /Photographer: Ada <Lovelace>/);
   assert.match(payload.text, /Checklist complete: Yes/);
