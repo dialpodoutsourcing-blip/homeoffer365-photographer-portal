@@ -42,6 +42,12 @@ create table if not exists public.photographer_upload_sessions (
   finalized_photos jsonb
 );
 
+-- Prepare retries must compare the declared metadata before issuing new tokens.
+-- Nullable only for sessions created before this migration refinement; the API
+-- refuses to reuse/finalize those sessions and requires a fresh prepare.
+alter table public.photographer_upload_sessions
+  add column if not exists prepared_manifest jsonb check (jsonb_typeof(prepared_manifest) = 'object');
+
 -- Existing rows have no classification or session. Leave those rows intact;
 -- the new-row constraint and RPC require these values on every finalized photo.
 alter table public.photographer_property_photos

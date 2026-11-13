@@ -58,7 +58,7 @@ test("fresh schema has required columns, foreign keys, private image bucket, and
   for (const [table, names] of Object.entries({
     photographers: ["id", "name", "email", "phone", "payment_method", "payment_url", "created_at", "updated_at"],
     photographer_property_photos: ["photographer_id", "photo", "photo_name", "description", "property_address", "photo_category", "photo_type", "condition_status", "submission_session_id", "client_photo_id"],
-    photographer_upload_sessions: ["id", "photographer_id", "property_address", "idempotency_key", "status", "expected_paths", "not_applicable", "expires_at", "created_at", "finalized_at"],
+    photographer_upload_sessions: ["id", "photographer_id", "property_address", "idempotency_key", "status", "expected_paths", "prepared_manifest", "not_applicable", "expires_at", "created_at", "finalized_at"],
   })) for (const name of names) assert.ok(columns.some(row => row.table_name === table && row.column_name === name), `${table}.${name}`);
   const s = await session();
   await assert.rejects(db.query(`insert into photographers (name,email,phone,payment_method,payment_url)
