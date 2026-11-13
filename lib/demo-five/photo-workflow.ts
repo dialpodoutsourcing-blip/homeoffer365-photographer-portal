@@ -153,7 +153,10 @@ export function validateSubmissionManifest(input: unknown): ValidationResult<Pho
     return { ok: false, error: "Photographer details, photos, and N/A selections are required." };
   }
   const name = text(input.photographer.name, 200);
-  const email = text(input.photographer.email, 320)?.toLowerCase();
+  const email = text(
+    typeof input.photographer.email === "string" ? input.photographer.email.toLowerCase() : null,
+    320,
+  );
   const phone = text(input.photographer.phone, 50);
   const paymentMethod = text(input.photographer.paymentMethod, 100);
   const paymentUrl = text(input.photographer.paymentUrl, 2048);

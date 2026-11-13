@@ -211,6 +211,18 @@ test("required contact/address fields enforce their exact maximum lengths", () =
   for (const propertyAddress of [" ", null, "a".repeat(501)]) rejects(validateSubmissionManifest(manifest({ propertyAddress })));
 });
 
+test("submission enforces the email limit after Unicode lowercasing", () => {
+  const email = `${"\u0130".repeat(308)}@example.com`;
+  assert.equal(email.length, 320);
+  rejects(validateSubmissionManifest(manifest({ photographer: { ...manifest().photographer, email } })));
+
+  const boundary = `${"\u0130".repeat(154)}@example.com`;
+  const result = validateSubmissionManifest(manifest({ photographer: { ...manifest().photographer, email: boundary } }));
+  assert.equal(result.ok, true);
+  assert.equal(result.value.photographer.email, `${"i\u0307".repeat(154)}@example.com`);
+  assert.equal(result.value.photographer.email.length, 320);
+});
+
 test("submission rejects malformed email and non-HTTPS or credential-bearing payment URLs", () => {
   for (const email of ["ada", "ada@example", "a b@example.com", "a@@example.com"]) {
     rejects(validateSubmissionManifest(manifest({ photographer: { ...manifest().photographer, email } })));
