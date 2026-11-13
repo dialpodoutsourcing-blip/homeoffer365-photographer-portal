@@ -61,8 +61,17 @@ async function runUpload(draft: UploadPhotoDraft, fetcher: typeof fetch, uploadT
     if (!(options.isOnline?.() ?? (typeof navigator === "undefined" || navigator.onLine !== false))) throw new Error("You are offline. Your photos are saved on this device; reconnect to submit.");
     const validation = validateSubmissionManifest(draft);
     if (!validation.ok) throw new Error(validation.error);
+    const previousUpload = draft.upload;
     draft.upload ??= { idempotencyKey: crypto.randomUUID(), completedPhotoIds: [] };
-    await save(draft);
+    try { await save(draft); }
+    catch (error) {
+      // No request has started: retain a pre-existing retry key, but do not lock
+      // an editable visit when its newly created upload state cannot be saved.
+      draft.upload = previousUpload;
+      throw new Error(error instanceof Error && error.name === "QuotaExceededError"
+        ? "Device storage is full. Free some space or remove unneeded photos, then retry. Your saved photos are preserved."
+        : "Could not save submission progress on this device. Check browser storage permissions and free space, then retry.");
+    }
     progress("preparing");
     if (!draft.upload.prepared) {
       draft.upload.prepared = await post<PreparedSession>("prepare", { ...validation.value, idempotencyKey: draft.upload.idempotencyKey });

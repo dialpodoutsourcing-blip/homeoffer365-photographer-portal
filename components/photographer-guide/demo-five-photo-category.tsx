@@ -46,7 +46,7 @@ export function DemoFivePhotoCategory({ category, photos, notApplicable, disable
         <DraftPhotoPreview blob={photo.blob} name={photo.photoName} />
         <strong>{photo.photoName}</strong><small>{photoLabel(photo.photoType)} · {photoLabel(photo.conditionStatus)}</small>
         <div className="demo-five-actions">
-          <button type="button" onClick={() => onView(photo)} aria-label={`View ${photo.photoName}`}>View</button>
+          <button type="button" disabled={disabled} onClick={() => onView(photo)} aria-label={`View ${photo.photoName}`}>View</button>
           <button type="button" disabled={disabled} aria-label={`Retake ${photo.photoName}`} onClick={event => { trigger.current = event.currentTarget; retake.current = photo; camera.current?.click(); }}>Retake</button>
           <button type="button" disabled={disabled} onClick={() => onRemove(photo)} aria-label={`Remove ${photo.photoName}`}>Remove</button>
         </div>

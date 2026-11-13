@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useReducer, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { applyAddressLocality, findAddressLocalities, formatAddressLocality, type AddressLocality } from "@/lib/address-suggestions";
 import { createIndexedDbPhotoDraftStore, createPhotoDraftKey, type PhotoDraftStore } from "@/lib/demo-five/photo-draft-store";
 import { PHOTO_CATEGORIES, validatePhotoMinimums, validateSubmissionManifest, type DraftPhoto, type PhotoCategory, type PhotoType, type PhotographerDetails } from "@/lib/demo-five/photo-workflow";
 import { preparePhoto } from "@/lib/demo-five/prepare-photo";
 import { uploadPhotoDraft, uploadToSignedPhotoUrl, type UploadPhotoDraft, type UploadProgress } from "@/lib/demo-five/upload-photo-draft";
 import { DemoFivePhotoCategory } from "./demo-five-photo-category";
-import { DemoFivePhotoEditor, type PhotoEdit } from "./demo-five-photo-editor";
+import { DemoFivePhotoEditor } from "./demo-five-photo-editor";
+import { initialPhotoFormState, photoFormReducer } from "@/lib/demo-five/photo-form-state";
 import { SubmissionConfirmation } from "./submission-confirmation";
 
 const addressListId = "demo-five-address-suggestions";
@@ -29,15 +30,16 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   const writes = useRef(Promise.resolve());
   const submittingRef = useRef(false);
   const [savedDrafts, setSavedDrafts] = useState<UploadPhotoDraft[]>([]);
-  const [error, setError] = useState("");
+  const [attempt, dispatch] = useReducer(photoFormReducer, initialPhotoFormState);
+  const { error, busy, submitting, submitted, edit, progress, terminalFailure, editorRevision } = attempt;
+  const setError = (error: string) => dispatch({ type: "patch", value: { error } });
+  const setBusy = (busy: boolean) => dispatch({ type: "patch", value: { busy } });
+  const setSubmitting = (submitting: boolean) => dispatch({ type: "patch", value: { submitting } });
+  const setSubmitted = (submitted: boolean) => dispatch({ type: "patch", value: { submitted } });
+  const setProgress = (progress: UploadProgress | null) => dispatch({ type: "patch", value: { progress } });
+  const setTerminalFailure = (terminalFailure: boolean) => dispatch({ type: "patch", value: { terminalFailure } });
   const [notice, setNotice] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [online, setOnline] = useState(true);
-  const [edit, setEdit] = useState<PhotoEdit | null>(null);
-  const [progress, setProgress] = useState<UploadProgress | null>(null);
-  const [terminalFailure, setTerminalFailure] = useState(false);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const nameInput = useRef<HTMLInputElement>(null);
@@ -91,10 +93,10 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   async function capture(file: File, category: PhotoCategory, existing?: DraftPhoto) {
     if (busy || submittingRef.current || current.current?.upload) return;
     const focus = { returnFocus: document.activeElement as HTMLElement | null };
-    setBusy(true); setError(""); setNotice("Preparing photo…");
+    dispatch({ type: "captureStarted" }); setNotice("Preparing photo…");
     try {
       const image = await preparePhoto(file);
-      setEdit({ image, category, existing, capturedAt: new Date().toISOString(), ...focus });
+      dispatch({ type: "captureFinished", edit: { image, category, existing, capturedAt: new Date().toISOString(), ...focus } });
       setNotice("");
     } catch (error) { setError(error instanceof Error ? error.message : "Could not open the camera image. Enable camera access or choose an existing image."); }
     finally { setBusy(false); }
@@ -105,7 +107,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     const exists = previous.photos.some(item => item.clientPhotoId === photo.clientPhotoId);
     try {
       await updatePhotos(exists ? previous.photos.map(item => item.clientPhotoId === photo.clientPhotoId ? photo : item) : [...previous.photos, photo]);
-      setEdit(null);
+      dispatch({ type: "closeEditor" });
     } catch (error) { throw new Error(storageMessage(error)); }
   }
   async function removePhoto(photo: DraftPhoto) {
@@ -127,7 +129,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   async function restore(value: UploadPhotoDraft) {
     if (busy || submittingRef.current) return;
     setBusy(true);
-    try { await writes.current; display(value); setSavedDrafts([]); setError(""); setNotice("Saved visit restored, including photos and upload progress."); }
+    try { await writes.current; display(value); setSavedDrafts([]); dispatch({ type: "draftRestored" }); closeSuggestions(); setNotice("Saved visit restored, including photos and upload progress."); }
     catch (error) { setError(storageMessage(error)); }
     finally { setBusy(false); }
   }
@@ -148,7 +150,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     if (!storageOrigin) { setError("Photo upload configuration is unavailable. Please contact Home Offer 365."); return; }
     const validation = validateSubmissionManifest(current.current);
     if (!validation.ok) { setError(validation.error); return; }
-    submittingRef.current = true; setSubmitting(true); setError(""); closeSuggestions();
+    submittingRef.current = true; dispatch({ type: "submissionStarted" }); closeSuggestions();
     try {
       // Retry the latest in-memory state if an earlier field save hit quota.
       await writes.current.catch(() => {});
@@ -164,7 +166,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
       await writes.current;
       await store.current!.delete(value.draftKey);
       setSavedDrafts(items => items.filter(item => item.draftKey !== value.draftKey));
-      display(emptyDraft()); setProgress(null); setNotice(""); setSubmitted(true);
+      display(emptyDraft()); setNotice(""); dispatch({ type: "submissionSucceeded" });
     } catch (error) { setError(storageMessage(error)); }
     finally { submittingRef.current = false; setSubmitting(false); }
   }
@@ -198,7 +200,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
           <label>Payment URL<input type="url" name="paymentUrl" inputMode="url" maxLength={2048} required pattern="https://.*" value={draft?.photographer.paymentUrl ?? ""} onChange={event => photographerField("paymentUrl", event.target.value)} placeholder="https://…" /></label>
         </div>
       </fieldset>
-      <div className="demo-five-categories">{PHOTO_CATEGORIES.map(category => <DemoFivePhotoCategory key={category} category={category} photos={draft?.photos.filter(photo => photo.category === category) ?? []} notApplicable={draft?.notApplicable ?? []} disabled={disabled} onCapture={(file, category, existing) => void capture(file, category, existing)} onView={photo => setEdit({ image: photo, category: photo.category, existing: photo, capturedAt: photo.capturedAt, viewOnly: true })} onRemove={photo => void removePhoto(photo)} onNotApplicable={(category, type, checked) => void notApplicable(category, type, checked)} onCancelCapture={() => setNotice("No photo was added. If camera access was denied, enable it in browser settings or choose an existing image.")} />)}</div>
+      <div className="demo-five-categories">{PHOTO_CATEGORIES.map(category => <DemoFivePhotoCategory key={category} category={category} photos={draft?.photos.filter(photo => photo.category === category) ?? []} notApplicable={draft?.notApplicable ?? []} disabled={disabled} onCapture={(file, category, existing) => void capture(file, category, existing)} onView={photo => dispatch({ type: "openEditor", edit: { image: photo, category: photo.category, existing: photo, capturedAt: photo.capturedAt, viewOnly: true } })} onRemove={photo => void removePhoto(photo)} onNotApplicable={(category, type, checked) => void notApplicable(category, type, checked)} onCancelCapture={() => setNotice("No photo was added. If camera access was denied, enable it in browser settings or choose an existing image.")} />)}</div>
       {locked && <p>This visit is saved for submission. Retry to finish uploading the remaining photos.</p>}
       {!online && <p role="status">You are offline. Keep taking and saving photos; reconnect before submitting.</p>}
       {progress && <div className="demo-five-progress" role="status" aria-live="polite"><progress value={progress.completed} max={progress.total} aria-label="Photos uploaded" /><p>{progress.phase === "preparing" ? "Preparing secure upload" : progress.phase === "finalizing" ? "Confirming your submission" : "Uploading photos"}: {progress.completed}/{progress.total} {progress.currentPhotoName}</p></div>}
@@ -207,7 +209,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
       {terminalFailure && <button type="button" disabled={busy || submitting} onClick={() => void restartExpired()}>Reset expired submission and keep photos</button>}
       <div className="demo-five-submit"><small>{minimums.ok ? "All photo minimums met. Review your details, then submit." : minimums.error}</small><button type="submit" disabled={!draft || busy || submitting || !online || !minimums.ok || terminalFailure}>{submitting ? "Submitting…" : locked ? "Retry submission" : "Submit Photos"}</button></div>
     </form>
-    {edit && <DemoFivePhotoEditor edit={edit} onSave={savePhoto} onClose={() => setEdit(null)} />}
+    {edit && <DemoFivePhotoEditor key={editorRevision} edit={edit} onSave={savePhoto} onClose={() => dispatch({ type: "closeEditor" })} />}
     {submitted && <SubmissionConfirmation onClose={() => { setSubmitted(false); requestAnimationFrame(() => nameInput.current?.focus()); }} />}
   </section>;
 }

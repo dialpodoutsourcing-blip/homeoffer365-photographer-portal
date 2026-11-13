@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { getPhotoTypeOptions, validateDraftPhoto, type DraftPhoto, type PhotoCategory, type PhotoType, type ConditionStatus } from "@/lib/demo-five/photo-workflow";
-import type { PreparedPhoto } from "@/lib/demo-five/prepare-photo";
+import { getPhotoTypeOptions, validateDraftPhoto, type DraftPhoto, type PhotoType, type ConditionStatus } from "@/lib/demo-five/photo-workflow";
+import type { PhotoEdit } from "@/lib/demo-five/photo-form-state";
 
 export function photoLabel(value: string) {
   return value === "hvac" ? "HVAC" : value.split("_").map(word => word[0].toUpperCase() + word.slice(1)).join(" ");
@@ -19,8 +19,6 @@ export function DraftPhotoPreview({ blob, name }: { blob: Blob; name: string }) 
   // eslint-disable-next-line @next/next/no-img-element
   return <img ref={image} alt={name} />;
 }
-
-export type PhotoEdit = { image: PreparedPhoto; category: PhotoCategory; existing?: DraftPhoto; capturedAt: string; viewOnly?: boolean; returnFocus?: HTMLElement | null };
 
 export function DemoFivePhotoEditor({ edit, onSave, onClose }: { edit: PhotoEdit; onSave: (photo: DraftPhoto) => Promise<void>; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);

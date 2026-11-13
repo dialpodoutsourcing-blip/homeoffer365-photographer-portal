@@ -81,6 +81,59 @@ test("offline, invalid minimums, and local quota failures make no remote request
   }
 });
 
+test("quota failure before preparing leaves a new draft editable and preserves an existing retry key", async () => {
+  const { uploadPhotoDraft } = await subject();
+  for (const retry of [false, true]) {
+    const d = draft(), api = server(d);
+    if (retry) d.upload = { idempotencyKey: "existing-key", completedPhotoIds: [] };
+    const previous = d.upload;
+    const result = await uploadPhotoDraft(d, api.fetch, async () => assert.fail("must not upload"), {
+      save: async () => { throw new DOMException("Full", "QuotaExceededError"); },
+    });
+    assert.equal(result.ok, false);
+    assert.equal(d.upload, previous, "failed local save must not introduce a new upload lock or lose an existing retry key");
+    assert.equal(api.calls.length, 0);
+    assert.match(result.error, /free.*space/i);
+    assert.equal(d.photos.length, 10);
+  }
+});
+
+async function formState() {
+  const url = new URL("../lib/demo-five/photo-form-state.ts", import.meta.url);
+  assert.ok(await readFile(url, "utf8").catch(() => ""), "photo form transition reducer must exist");
+  return import(url.href);
+}
+
+test("photo editor transitions cannot overlap capture, submission, or confirmation", async () => {
+  const { initialPhotoFormState, photoFormReducer } = await formState();
+  const photo = draft().photos[0], edit = { image: photo, existing: photo, category: photo.category, capturedAt: photo.capturedAt };
+  let state = photoFormReducer(initialPhotoFormState, { type: "captureStarted" });
+  state = photoFormReducer(state, { type: "openEditor", edit: { ...edit, viewOnly: true } });
+  assert.equal(state.edit, null, "view cannot open while image preparation is pending");
+  state = photoFormReducer(state, { type: "captureFinished", edit });
+  assert.equal(state.edit, edit);
+  const firstRevision = state.editorRevision;
+  state = photoFormReducer(state, { type: "openEditor", edit: { ...edit, existing: draft().photos[1] } });
+  assert.ok(state.editorRevision > firstRevision, "a changed edit must remount its form state");
+  state = photoFormReducer(state, { type: "submissionStarted" });
+  assert.equal(state.edit, null);
+  state = photoFormReducer(state, { type: "openEditor", edit });
+  assert.equal(state.edit, null);
+  state = photoFormReducer(state, { type: "submissionSucceeded" });
+  state = photoFormReducer(state, { type: "openEditor", edit });
+  assert.equal(state.edit, null); assert.equal(state.submitted, true);
+});
+
+test("restoring a visit resets terminal failure, progress, editor, and confirmation state", async () => {
+  const { initialPhotoFormState, photoFormReducer } = await formState();
+  const state = { ...initialPhotoFormState, terminalFailure: true, error: "Expired", busy: true, submitted: true,
+    edit: { existing: draft().photos[0] }, progress: { phase: "uploading", completed: 3, total: 10, currentPhotoName: "Previous visit" } };
+  const restored = photoFormReducer(state, { type: "draftRestored" });
+  assert.equal(restored.terminalFailure, false); assert.equal(restored.progress, null);
+  assert.equal(restored.error, ""); assert.equal(restored.edit, null);
+  assert.equal(restored.submitted, false); assert.equal(restored.submitting, false); assert.equal(restored.busy, false);
+});
+
 test("double submit shares one operation and finalized retries skip every uploaded object", async () => {
   const { uploadPhotoDraft } = await subject();
   const d = draft(), api = server(d, { alreadyUploaded: d.photos.map(p => p.clientPhotoId) });
@@ -194,5 +247,7 @@ test("rendered category counts real photos, supports repeated types, and keeps N
     assert.match(complete, /4\/4 photos — Complete/);
     const removed = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, photos: [] }));
     assert.match(removed, /0\/4 photos — Needed/);
+    const disabled = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, disabled: true }));
+    assert.ok([...disabled.matchAll(/<button\b[^>]*>/g)].every(([button]) => button.includes('disabled=""')), "all category actions, including View, must honor the busy/submission guard");
   } finally { hook.deregister(); }
 });
