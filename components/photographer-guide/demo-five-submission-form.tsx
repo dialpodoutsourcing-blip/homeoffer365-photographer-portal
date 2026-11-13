@@ -230,7 +230,14 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   const disabled = !draft || busy || submitting || locked;
   const minimums = validatePhotoMinimums(draft?.photos ?? []);
   const counts = countPhotosByCategory(draft?.photos ?? []);
-  const readyToSubmit = !!draft && validateSubmissionManifest(draft).ok;
+  const submissionValidation = draft ? validateSubmissionManifest(draft) : null;
+  const readyToSubmit = submissionValidation?.ok === true;
+  const incompleteDetails = draft ? ([1, 2] as const)
+    .map(step => ({ step, validation: validateWizardStep(step, draft) }))
+    .find(({ validation }) => !validation.ok) : undefined;
+  const submissionRequirement = incompleteDetails && !incompleteDetails.validation.ok ? incompleteDetails.validation.error
+    : submissionValidation && !submissionValidation.ok ? submissionValidation.error
+    : minimums.ok ? "All photo minimums met. Review your details, then submit." : minimums.error;
   const stepTitles = ["User Information", "Payment Information", "Property Photos"];
   function back() { setStep((step - 1) as WizardStep); setError(""); setNotice(""); closeSuggestions(); }
   function tabKey(event: KeyboardEvent<HTMLButtonElement>, category: PhotoCategory) {
@@ -276,7 +283,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
       <p className="demo-five-notice" role="status" aria-live="polite">{notice || (!draft ? "Loading saved visits…" : "Photos stay on this device until you submit.")}</p>
       {error && <p className="demo-five-error" role="alert">{error}</p>}
       {terminalFailure && <button type="button" disabled={busy || submitting} onClick={() => void restartExpired()}>Reset expired submission and keep photos</button>}
-      <div className="demo-five-submit">{step > 1 && <button type="button" className="demo-five-back" disabled={busy || submitting} onClick={back}>Back</button>}{step === 3 && <small>{minimums.ok ? "All photo minimums met. Review your details, then submit." : minimums.error}</small>}<button className="demo-five-primary" type="submit" disabled={!draft || busy || submitting || (step === 3 && (!online || !readyToSubmit || terminalFailure))}>{step < 3 ? "Next" : submitting ? "Submitting…" : locked ? "Retry submission" : "Submit All Photos"}</button></div>
+      <div className="demo-five-submit">{step > 1 && <button type="button" className="demo-five-back" disabled={busy || submitting} onClick={back}>Back</button>}{step === 3 && <><small id="demo-five-submission-requirements" role="status" aria-live="polite">{submissionRequirement}</small>{incompleteDetails && <button type="button" disabled={disabled} aria-describedby="demo-five-submission-requirements" onClick={() => { setStep(incompleteDetails.step); setError(""); setNotice(""); closeSuggestions(); }}>{`Complete ${stepTitles[incompleteDetails.step - 1]}`}</button>}</>}<button className="demo-five-primary" type="submit" aria-describedby={step === 3 ? "demo-five-submission-requirements" : undefined} disabled={!draft || busy || submitting || (step === 3 && (!online || !readyToSubmit || terminalFailure))}>{step < 3 ? "Next" : submitting ? "Submitting…" : locked ? "Retry submission" : "Submit All Photos"}</button></div>
     </form>
     {edit && <DemoFivePhotoEditor key={editorRevision} edit={edit} onSave={savePhoto} onClose={() => dispatch({ type: "closeEditor" })} />}
     {submitted && <SubmissionConfirmation onClose={() => { setSubmitted(false); requestAnimationFrame(() => nameInput.current?.focus()); }} />}

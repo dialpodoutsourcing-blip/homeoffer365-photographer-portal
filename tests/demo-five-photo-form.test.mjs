@@ -205,6 +205,45 @@ test("shared retake cancellation restores focus and keeps the saved photo", asyn
   } finally { form.close(); }
 });
 
+test("restored incomplete details explain disabled submission and recover through the required step", async () => {
+  const onlineDescriptor = Object.getOwnPropertyDescriptor(navigator, "onLine");
+  Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
+  try {
+    for (const missing of ["contact-and-payment", "payment"]) {
+      const saved = draft();
+      saved.photographer.paymentUrl = "";
+      if (missing === "contact-and-payment") saved.photographer.email = "";
+      const form = await mountedForm(saved);
+      try {
+        await form.restore();
+        assert.match(form.html(), /Step 3 of 3/);
+        const submit = () => form.find(node => node.type === "button" && node.props.type === "submit");
+        assert.equal(submit().props.disabled, true, "incomplete details must retain submission gating");
+        assert.match(form.html(), missing === "contact-and-payment" ? /Enter your name, a valid email, and phone number/ : /Enter a payment method and payment URL/);
+        assert.doesNotMatch(form.html(), /All photo minimums met\. Review your details, then submit\./);
+        const label = missing === "contact-and-payment" ? "Complete User Information" : "Complete Payment Information";
+        form.find(node => node.type === "button" && node.props.children === label).props.onClick();
+        form.render();
+        if (missing === "contact-and-payment") {
+          assert.match(form.html(), /Step 1 of 3/);
+          form.field("email", "ada@example.com");
+          await form.next();
+        }
+        assert.match(form.html(), /Step 2 of 3/);
+        form.field("paymentUrl", "https://example.com/pay");
+        await form.next();
+        assert.match(form.html(), /Step 3 of 3/);
+        assert.equal(submit().props.disabled, false, "correcting details should unblock the valid saved photo set");
+        assert.match(form.html(), /View 0/); assert.match(form.html(), /value="123 Main Street"/);
+        assert.doesNotMatch(form.html(), /Complete User Information|Complete Payment Information/);
+      } finally { form.close(); }
+    }
+  } finally {
+    if (onlineDescriptor) Object.defineProperty(navigator, "onLine", onlineDescriptor);
+    else delete navigator.onLine;
+  }
+});
+
 test("uploads at concurrency three, persists completed IDs, and only confirms after finalize", async () => {
   const { uploadPhotoDraft } = await subject();
   const d = draft(), api = server(d), progress = [], store = createIndexedDbPhotoDraftStore(new IDBFactory());
