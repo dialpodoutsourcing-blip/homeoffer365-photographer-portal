@@ -252,7 +252,7 @@ test("signed transport encodes path and token and rejects missing or insecure or
 
 test("Demo 5 exposes its scoped camera, editor, persistence, and accessible form contracts", async () => {
   const read = name => readFile(new URL(`../components/photographer-guide/${name}.tsx`, import.meta.url), "utf8").catch(() => "");
-  const [form, category, editor] = await Promise.all([read("demo-five-submission-form"), read("demo-five-photo-category"), read("demo-five-photo-editor")]);
+  const [form, category, editor, styles] = await Promise.all([read("demo-five-submission-form"), read("demo-five-photo-category"), read("demo-five-photo-editor"), readFile(new URL("../app/globals.css", import.meta.url), "utf8")]);
   assert.ok(form, "Demo Five form must exist");
   assert.doesNotMatch(form, /Google Drive|driveLink/);
   for (const name of ["photographerName", "email", "phone", "paymentMethod", "paymentUrl", "propertyAddress"]) assert.ok(form.includes(`name="${name}"`));
@@ -261,6 +261,11 @@ test("Demo 5 exposes its scoped camera, editor, persistence, and accessible form
   assert.match(category, /accept="image\/\*" capture="environment"/);
   assert.match(category, /addEventListener\("cancel"/);
   assert.match(category, /Choose (?:an )?image/);
+  assert.doesNotMatch(category, /demo-five-type-hint|getPhotoTypeOptions/);
+  assert.match(category, /OPTIONAL_FEATURES\[category\]\.length\s*>\s*0/);
+  assert.match(category, /<details className="demo-five-na-disclosure">/);
+  assert.match(category, /<summary>Mark feature N\/A<\/summary>/);
+  assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.demo-five-photo-form \.demo-five-category > summary, \.demo-five-photo-form \.demo-five-category-content/);
   for (const action of ["Take Photo", "View", "Retake", "Remove", "N\/A"]) assert.match(category, new RegExp(action));
   assert.match(editor, /role="dialog"/); assert.match(editor, /aria-modal="true"/);
   assert.match(editor, /Photo name/); assert.match(editor, /Photo type/); assert.match(editor, /Condition status/); assert.match(editor, /Description/);
@@ -309,6 +314,10 @@ test("rendered category counts real photos, supports repeated types, and keeps N
     assert.match(html, /2\/4 photos — Needed/);
     assert.equal((html.match(/<li>/g) ?? []).length, 2);
     assert.match(html, /checked=""[^>]*\/>Roof N\/A/);
+    assert.match(html, /<details class="demo-five-na-disclosure"><summary>Mark feature N\/A<\/summary>/);
+    assert.doesNotMatch(html, /<details class="demo-five-na-disclosure" open/);
+    const mechanical = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, category: "mechanical", photos: [], notApplicable: [] }));
+    assert.doesNotMatch(mechanical, /Mark feature N\/A/);
     assert.match(html, /accept="image\/\*" capture="environment"/);
     assert.match(html, /aria-label="View View 0"/);
     const complete = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, photos: draft().photos.slice(0, 4) }));

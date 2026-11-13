@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ChangeEvent } from "react";
-import { OPTIONAL_FEATURES, PHOTO_MINIMUMS, getPhotoTypeOptions, type DraftPhoto, type PhotoCategory, type NotApplicableSelection, type PhotoType } from "@/lib/demo-five/photo-workflow";
+import { OPTIONAL_FEATURES, PHOTO_MINIMUMS, type DraftPhoto, type PhotoCategory, type NotApplicableSelection, type PhotoType } from "@/lib/demo-five/photo-workflow";
 import { DraftPhotoPreview, photoLabel } from "./demo-five-photo-editor";
 
 type Props = {
@@ -34,14 +34,16 @@ export function DemoFivePhotoCategory({ category, photos, notApplicable, disable
   return <details className="demo-five-category" open>
     <summary><strong>{photoLabel(category)}</strong><span aria-live="polite">{photos.length}/{minimum} photos {photos.length >= minimum ? "— Complete" : "— Needed"}</span></summary>
     <div className="demo-five-category-content">
-      <p className="demo-five-type-hint">{getPhotoTypeOptions(category).map(photoLabel).join(" · ")}</p>
       <input ref={camera} type="file" accept="image/*" capture="environment" hidden disabled={disabled} onChange={selected} />
       <input ref={picker} type="file" accept="image/*" hidden disabled={disabled} onChange={selected} />
       <div className="demo-five-actions">
         <button type="button" disabled={disabled} onClick={event => { trigger.current = event.currentTarget; retake.current = undefined; camera.current?.click(); }}>Take Photo<span className="sr-only"> — {photoLabel(category)}</span></button>
         <button type="button" disabled={disabled} onClick={event => { trigger.current = event.currentTarget; retake.current = undefined; picker.current?.click(); }}>Choose image<span className="sr-only"> — {photoLabel(category)}</span></button>
       </div>
-      <div className="demo-five-na">{OPTIONAL_FEATURES[category].map(type => <label key={type}><input type="checkbox" disabled={disabled} checked={notApplicable.some(item => item.category === category && item.photoType === type)} onChange={event => onNotApplicable(category, type, event.target.checked)} />{photoLabel(type)} N/A</label>)}</div>
+      {OPTIONAL_FEATURES[category].length > 0 && <details className="demo-five-na-disclosure">
+        <summary>Mark feature N/A</summary>
+        <div className="demo-five-na">{OPTIONAL_FEATURES[category].map(type => <label key={type}><input type="checkbox" disabled={disabled} checked={notApplicable.some(item => item.category === category && item.photoType === type)} onChange={event => onNotApplicable(category, type, event.target.checked)} />{photoLabel(type)} N/A</label>)}</div>
+      </details>}
       <ul className="demo-five-thumbnails">{photos.map(photo => <li key={photo.clientPhotoId}>
         <DraftPhotoPreview blob={photo.blob} name={photo.photoName} />
         <strong>{photo.photoName}</strong><small>{photoLabel(photo.photoType)} · {photoLabel(photo.conditionStatus)}</small>
