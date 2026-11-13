@@ -80,6 +80,22 @@ test("new databases upgrade to v1 and round-trip metadata, N/A, unfinished field
   db.close();
 });
 
+test("Other photos round-trip alongside existing draft photos and reject unrelated photo types", async () => {
+  const factory = new IDBFactory();
+  const store = createIndexedDbPhotoDraftStore(factory);
+  const input = draft();
+  input.photos.push({ ...input.photos[0], clientPhotoId: "other-1", photoName: "Additional detail", category: "other", photoType: "other", conditionStatus: "not_accessible" });
+  await store.save(input);
+  const restored = await createIndexedDbPhotoDraftStore(factory).load(input.draftKey);
+  assert.deepEqual(restored, input);
+  assert.equal(await restored.photos[1].blob.text(), "image");
+  assert.equal(restored.photos[0].category, "exterior");
+  for (const photoType of ["front", "kitchen", "hvac", "general_condition"]) {
+    await assert.rejects(store.save({ ...restored, photos: [{ ...restored.photos[1], photoType }] }), PhotoDraftCorruptionError);
+  }
+  assert.deepEqual(await store.load(input.draftKey), restored);
+});
+
 test("saving the same key atomically replaces it while list/delete preserve other addresses", async () => {
   const store = createIndexedDbPhotoDraftStore(new IDBFactory());
   const first = draft();

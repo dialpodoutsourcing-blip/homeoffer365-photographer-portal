@@ -8,10 +8,13 @@ import { CONDITION_STATUSES, PHOTO_TYPES } from "../lib/demo-five/photo-workflow
 const migrationUrl = new URL("../supabase/migrations/202611130001_demo_five_photo_uploads.sql", import.meta.url);
 const sampleTypesMigrationUrl = new URL("../supabase/migrations/202611130002_demo_five_sample_photo_types.sql", import.meta.url);
 const conditionStatusesMigrationUrl = new URL("../supabase/migrations/202611130003_demo_five_condition_statuses.sql", import.meta.url);
+const otherCategoryMigrationUrl = new URL("../supabase/migrations/202611130004_demo_five_other_category.sql", import.meta.url);
 let db;
 let migration;
 let sampleTypesMigration;
 let conditionStatusesMigration;
+let otherCategoryMigration;
+const legacyTypes = { exterior: ["sides", "roof", "yard", "driveway", "outbuildings", "damage"], interior: ["bedroom", "under_sink", "damage"], mechanical: ["hvac", "electrical_panel", "plumbing"], condition: [], other: [] };
 const bootstrap = `create role anon; create role authenticated; create role service_role;
   create schema storage;
   create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);`;
@@ -20,11 +23,13 @@ before(async () => {
   migration = await readFile(migrationUrl, "utf8");
   sampleTypesMigration = await readFile(sampleTypesMigrationUrl, "utf8");
   conditionStatusesMigration = await readFile(conditionStatusesMigrationUrl, "utf8");
+  otherCategoryMigration = await readFile(otherCategoryMigrationUrl, "utf8");
   db = new PGlite();
   await db.exec(bootstrap);
   await db.exec(migration);
   await db.exec(sampleTypesMigration);
   await db.exec(conditionStatusesMigration);
+  await db.exec(otherCategoryMigration);
 });
 after(async () => { await db?.close(); });
 
@@ -85,9 +90,8 @@ test("database classification accepts every selectable photo type and preserves 
   const photographerId = randomUUID();
   await db.query(`insert into photographers (id,name,email,phone,payment_method,payment_url)
     values ($1,'Classification',$2,'123','Invoice','https://example.com/pay')`, [photographerId, `${photographerId}@example.com`]);
-  const legacy = { exterior: ["sides", "roof", "yard", "driveway", "outbuildings", "damage"], interior: ["bedroom", "under_sink", "damage"], mechanical: ["hvac", "electrical_panel", "plumbing"], condition: [] };
   for (const category of Object.keys(PHOTO_TYPES)) {
-    for (const photoType of [...PHOTO_TYPES[category], ...legacy[category]]) {
+    for (const photoType of [...PHOTO_TYPES[category], ...legacyTypes[category]]) {
       await db.query(`insert into photographer_property_photos
         (photographer_id,property_address,photo,photo_name,description,photo_category,photo_type,condition_status)
         values ($1,'123 Example Street',$2,$3,'',$4,$5,'good_condition')`,
@@ -100,16 +104,50 @@ test("database classification accepts every inspector condition status and rejec
   const photographerId = randomUUID();
   await db.query(`insert into photographers (id,name,email,phone,payment_method,payment_url)
     values ($1,'Conditions',$2,'123','Invoice','https://example.com/pay')`, [photographerId, `${photographerId}@example.com`]);
-  for (const conditionStatus of CONDITION_STATUSES) {
+  for (const category of ["condition", "other"]) for (const conditionStatus of CONDITION_STATUSES) {
     await db.query(`insert into photographer_property_photos
       (photographer_id,property_address,photo,photo_name,description,photo_category,photo_type,condition_status)
-      values ($1,'123 Example Street',$2,$3,'','condition','general_condition',$4)`,
-    [photographerId, `${conditionStatus}.webp`, conditionStatus, conditionStatus]);
+      values ($1,'123 Example Street',$2,$3,'',$4,$5,$6)`,
+    [photographerId, `${category}-${conditionStatus}.webp`, conditionStatus, category, category === "other" ? "other" : "general_condition", conditionStatus]);
   }
   await assert.rejects(db.query(`insert into photographer_property_photos
     (photographer_id,property_address,photo,photo_name,description,photo_category,photo_type,condition_status)
     values ($1,'123 Example Street','excellent.webp','Excellent','','condition','general_condition','excellent')`, [photographerId]), /check constraint/);
 });
+
+test("database rejects unrelated photo types in Other without admitting cross-category pairings", async () => {
+  const s = await session();
+  for (const [category, photoType] of [["other", "front"], ["other", "kitchen"], ["other", "hvac"], ["other", "general_condition"],
+    ["exterior", "kitchen"], ["interior", "hvac"], ["mechanical", "general_condition"], ["condition", "front"]]) {
+    await assert.rejects(db.query(`insert into photographer_property_photos
+      (photographer_id,property_address,photo,photo_name,description,photo_category,photo_type,condition_status)
+      values ($1,'123 Example Street','invalid.webp','Invalid','',$2,$3,'good_condition')`,
+    [s.photographerId, category, photoType]), /photographer_photos_classification/);
+  }
+});
+
+test("finalize persists optional Other photos and returns them on an identical retry", async () => {
+  const photos = validPhotos();
+  photos.push({ ...photos[0], clientPhotoId: "other-1", objectPath: "session/other-1.webp", category: "other", photoType: "other", conditionStatus: "not_accessible" });
+  const s = await session(photos);
+  const expected = { submissionId: s.sessionId, photographerId: s.photographerId, photoCount: 11 };
+  assert.deepEqual(await finalize(s), expected);
+  assert.deepEqual(await finalize(s), expected);
+  assert.deepEqual((await db.query(`select photo_category,photo_type,condition_status,photo from photographer_property_photos
+    where submission_session_id=$1 and client_photo_id='other-1'`, [s.sessionId])).rows,
+  [{ photo_category: "other", photo_type: "other", condition_status: "not_accessible", photo: "session/other-1.webp" }]);
+});
+
+for (const category of ["exterior", "interior", "mechanical", "condition"]) {
+  test(`Other does not satisfy the database ${category} minimum`, async () => {
+    const photos = validPhotos();
+    const photo = photos.find(photo => photo.category === category);
+    photo.category = "other"; photo.photoType = "other";
+    const s = await session(photos);
+    await assert.rejects(finalize(s), /Insufficient category counts/);
+    await assertUnfinalized(s);
+  });
+}
 
 test("migration preserves populated owner tables and can be applied again", async (t) => {
   const legacy = new PGlite();
@@ -132,6 +170,35 @@ test("migration preserves populated owner tables and can be applied again", asyn
   await legacy.exec(conditionStatusesMigration);
   assert.deepEqual((await legacy.query("select photo_name,photo_category,photo_type,condition_status from photographer_property_photos")).rows,
     [{ photo_name: "Legacy photo", photo_category: "other", photo_type: null, condition_status: null }]);
+
+  // Upgrade a populated migration-003 database, including every current/legacy
+  // classification and all six condition statuses, without rewriting its data.
+  for (const category of ["exterior", "interior", "mechanical", "condition"]) {
+    for (const photoType of [...PHOTO_TYPES[category], ...legacyTypes[category]]) {
+      for (const conditionStatus of CONDITION_STATUSES) {
+        await legacy.query(`insert into photographer_property_photos
+          (photographer_id,property_address,photo,photo_name,photo_category,photo_type,condition_status)
+          select id,'Old address',$1,$2,$3,$4,$5 from photographers`,
+        [`${category}-${photoType}-${conditionStatus}.webp`, photoType, category, photoType, conditionStatus]);
+      }
+    }
+  }
+  const priorRows = (await legacy.query("select * from photographer_property_photos order by id")).rows;
+  await legacy.exec(otherCategoryMigration);
+  assert.deepEqual((await legacy.query("select * from photographer_property_photos order by id")).rows, priorRows);
+  for (const conditionStatus of CONDITION_STATUSES) {
+    await legacy.query(`insert into photographer_property_photos
+      (photographer_id,property_address,photo,photo_name,photo_category,photo_type,condition_status)
+      select id,'Old address',$1,'Additional detail','other','other',$2 from photographers`,
+    [`other-${conditionStatus}.webp`, conditionStatus]);
+  }
+  const withOtherRows = (await legacy.query("select * from photographer_property_photos order by id")).rows;
+  await legacy.exec(otherCategoryMigration);
+  await legacy.exec(otherCategoryMigration);
+  assert.deepEqual((await legacy.query("select * from photographer_property_photos order by id")).rows, withOtherRows);
+  await assert.rejects(legacy.exec(`insert into photographer_property_photos
+    (photographer_id,property_address,photo,photo_name,photo_category,photo_type,condition_status)
+    select id,'Old address','invalid.webp','Invalid','other','front','good_condition' from photographers`), /photographer_photos_classification/);
   assert.equal((await legacy.query("select has_table_privilege('anon','photographers','SELECT') as allowed")).rows[0].allowed, false);
 });
 

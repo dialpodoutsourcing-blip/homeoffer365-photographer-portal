@@ -73,6 +73,55 @@ async function prepared(f = fixture(), input = manifest()) {
   return { f, input, result, finalInput: { sessionId: result.sessionId, idempotencyKey: result.idempotencyKey, photos, notApplicable: input.notApplicable } };
 }
 
+function manifestWithOther() {
+  const input = manifest();
+  input.photos.push({ ...input.photos[0], clientPhotoId: "other-1", photoName: "Additional detail", category: "other", photoType: "other", conditionStatus: "not_accessible" });
+  return input;
+}
+
+test("prepare and finalize preserve an optional Other photo alongside all required photos", async () => {
+  const input = manifestWithOther();
+  const { f, result, finalInput } = await prepared(fixture(), input);
+  assert.equal(result.uploads.length, 11);
+  const response = await handleFinalizePhotoSubmission(request(finalInput), f.dependencies);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).photoCount, 11);
+  assert.deepEqual(f.finalized[0].photos.find(photo => photo.clientPhotoId === "other-1"), { ...finalInput.photos[10], capturedAt: "2026-11-13T12:00:00.000Z" });
+  assert.deepEqual(f.sessions.get(result.sessionId).preparedManifest.photos.find(photo => photo.clientPhotoId === "other-1"), { ...input.photos[10], capturedAt: "2026-11-13T12:00:00.000Z" });
+});
+
+for (const category of ["exterior", "interior", "mechanical", "condition"]) {
+  test(`Other photos cannot replace the ${category} minimum at either API boundary`, async () => {
+    const input = manifestWithOther();
+    const photo = input.photos.find(photo => photo.category === category);
+    photo.category = "other"; photo.photoType = "other";
+    const rejected = fixture();
+    assert.equal((await handlePreparePhotoSubmission(request(input), rejected.dependencies)).status, 400);
+    assert.equal(rejected.sessions.size, 0);
+
+    const { f, result, finalInput } = await prepared(fixture(), manifestWithOther());
+    const finalPhoto = finalInput.photos.find(photo => photo.category === category);
+    finalPhoto.category = "other"; finalPhoto.photoType = "other";
+    assert.equal((await handleFinalizePhotoSubmission(request(finalInput), f.dependencies)).status, 400);
+    assert.equal(f.finalized.length, 0);
+    assert.equal(f.sessions.get(result.sessionId).status, "prepared");
+  });
+}
+
+for (const photoType of ["front", "kitchen", "hvac", "general_condition"]) {
+  test(`Other rejects the unrelated ${photoType} type at both API boundaries`, async () => {
+    const input = manifestWithOther(); input.photos[10].photoType = photoType;
+    const rejected = fixture();
+    assert.equal((await handlePreparePhotoSubmission(request(input), rejected.dependencies)).status, 400);
+    assert.equal(rejected.sessions.size, 0);
+
+    const { f, finalInput } = await prepared(fixture(), manifestWithOther());
+    finalInput.photos[10].photoType = photoType;
+    assert.equal((await handleFinalizePhotoSubmission(request(finalInput), f.dependencies)).status, 400);
+    assert.equal(f.finalized.length, 0);
+  });
+}
+
 test("HTTP boundaries reject malformed JSON and absent configuration safely", async () => {
   for (const handle of [handlePreparePhotoSubmission, handleFinalizePhotoSubmission]) {
     assert.equal((await handle(request("{"), { env: {} })).status, 400);
