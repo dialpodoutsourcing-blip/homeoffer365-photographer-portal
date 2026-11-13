@@ -9,8 +9,11 @@ const demoOneAliasPath = new URL("../app/photographers/demo-1/page.tsx", import.
 const demoTwoPath = new URL("../app/photographers/demo-2/page.tsx", import.meta.url);
 const demoThreePath = new URL("../app/photographers/demo-3/page.tsx", import.meta.url);
 const demoFourPath = new URL("../app/photographers/demo-4/page.tsx", import.meta.url);
+const demoFivePath = new URL("../app/photographers/demo-5/page.tsx", import.meta.url);
 const demoFourLandingPath = new URL("../components/photographer-guide/photographer-demo-four.tsx", import.meta.url);
+const demoFiveLandingPath = new URL("../components/photographer-guide/photographer-demo-five.tsx", import.meta.url);
 const demoFourSamplesPath = new URL("../components/photographer-guide/demo-four-samples.tsx", import.meta.url);
+const demoFiveSamplesPath = new URL("../components/photographer-guide/demo-five-samples.tsx", import.meta.url);
 const stylesPath = new URL("../app/globals.css", import.meta.url);
 const photoSliderPath = new URL("../components/photographer-guide/photo-slider.tsx", import.meta.url);
 const submissionFormPath = new URL("../components/photographer-guide/submission-form.tsx", import.meta.url);
@@ -38,6 +41,27 @@ test("the site root loads demo 4 first", async () => {
   assert.match(rootPage, /import \{ PhotographerDemoFour \}/);
   assert.match(rootPage, /<PhotographerDemoFour \/>/);
   assert.doesNotMatch(rootPage, /PhotographerLanding/);
+});
+
+test("demo 5 starts as an independent copy of demo 4", async () => {
+  const [demoFour, demoFive, demoFourLanding, demoFiveLanding, demoFourSamples, demoFiveSamples] = await Promise.all([
+    readFile(demoFourPath, "utf8"),
+    readFile(demoFivePath, "utf8"),
+    readFile(demoFourLandingPath, "utf8"),
+    readFile(demoFiveLandingPath, "utf8"),
+    readFile(demoFourSamplesPath, "utf8"),
+    readFile(demoFiveSamplesPath, "utf8"),
+  ]);
+
+  assert.match(demoFive, /PhotographerDemoFive/);
+  assert.match(demoFive, /Photographer Demo 5/);
+  const normalize = (source) => source.replaceAll("\r\n", "\n").trimEnd();
+  assert.equal(
+    normalize(demoFiveLanding.replaceAll("DemoFive", "DemoFour").replaceAll("demo-five-samples", "demo-four-samples")),
+    normalize(demoFourLanding),
+  );
+  assert.equal(normalize(demoFiveSamples.replaceAll("DemoFive", "DemoFour")), normalize(demoFourSamples));
+  assert.doesNotMatch(demoFour, /PhotographerDemoFive|Photographer Demo 5/);
 });
 
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {
