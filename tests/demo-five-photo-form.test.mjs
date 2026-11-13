@@ -67,7 +67,8 @@ async function mountedForm(saved) {
   const hook = componentImports();
   const { DemoFiveSubmissionForm } = await import("../components/photographer-guide/demo-five-submission-form.tsx");
   const factory = new IDBFactory();
-  if (saved) await createIndexedDbPhotoDraftStore(factory).save(saved);
+  const store = createIndexedDbPhotoDraftStore(factory);
+  if (saved) await store.save(saved);
   const original = { window: globalThis.window, document: globalThis.document, createImageBitmap: globalThis.createImageBitmap };
   const document = { activeElement: null, createElement: () => ({ getContext: () => ({ drawImage() {} }), toBlob: callback => callback(new Blob(["image"], { type: "image/webp" })) }) };
   globalThis.document = document;
@@ -115,6 +116,7 @@ async function mountedForm(saved) {
   async function settle() { for (let i = 0; i < 5; i++) await new Promise(resolve => setTimeout(resolve, 0)); return render(); }
   function find(predicate) { const result = elements().find(predicate); assert.ok(result, "expected rendered control"); return result; }
   const api = { render, settle, find, elements, html: () => renderToStaticMarkup(tree),
+    loadSaved: key => store.load(key),
     field(name, value) { find(node => node.props?.name === name).props.onChange({ target: { value } }); render(); },
     async next() { await find(node => node.type === "form").props.onSubmit({ preventDefault() {} }); return settle(); },
     async restore() { await find(node => node.type?.name === "DemoFiveDraftRestore").props.onRestore(saved); return settle(); },
@@ -157,7 +159,11 @@ test("wizard validates each visible step and preserves contact and payment value
 });
 
 test("restored photos open Step 3 with five counted tabs, and only Interior exposes N/A", async () => {
-  const form = await mountedForm(draft());
+  const saved = draft();
+  const original = saved.photos[0];
+  const originalMetadata = { ...original };
+  const originalBlobBytes = await original.blob.arrayBuffer();
+  const form = await mountedForm(saved);
   try {
     await form.restore(); const html = form.html();
     assert.match(html, /Step 3 of 3/);
@@ -171,7 +177,7 @@ test("restored photos open Step 3 with five counted tabs, and only Interior expo
     tab("Other").props.onClick(); form.render();
     assert.match(form.html(), /No Other photos yet/); assert.doesNotMatch(form.html(), /Mark feature N\/A/);
     tab("Interior").props.onClick(); form.render();
-    const photo = { ...draft().photos[0], category: "other", photoName: "Garden detail" };
+    const photo = { ...draft().photos[0], clientPhotoId: "photo-new", category: "other", photoName: "Garden detail" };
     // The editor's saved classification determines the newly active tab.
     const camera = form.find(node => node.type === "input" && node.props.capture === "environment");
     const trigger = form.find(node => node.type === "button" && node.props.children === "Take Photo");
@@ -183,6 +189,14 @@ test("restored photos open Step 3 with five counted tabs, and only Interior expo
     await editor.props.onSave(photo); await form.settle();
     assert.match(form.html(), /aria-selected="true"[^>]*aria-label="Other, 1 photos"/);
     assert.match(form.html(), /Garden detail/);
+    const displayedTotal = [...form.html().matchAll(/aria-label="(?:Exterior|Interior|Mechanical|Condition|Other), (\d+) photos"/g)]
+      .reduce((total, match) => total + Number(match[1]), 0);
+    assert.equal(displayedTotal, 11);
+    assert.equal(saved.photos.length, 10);
+    const persisted = await form.loadSaved(saved.draftKey);
+    assert.equal(persisted.photos.length, 11);
+    assert.deepEqual(persisted.photos[0], originalMetadata);
+    assert.deepEqual(await persisted.photos[0].blob.arrayBuffer(), originalBlobBytes);
   } finally { form.close(); }
 });
 
