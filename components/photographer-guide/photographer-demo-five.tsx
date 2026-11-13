@@ -2,7 +2,8 @@ import Image from "next/image";
 import { ExternalLink, House, Star, Users } from "lucide-react";
 import demoFourHero from "@/public/images/photo-examples/demo-4-photographer-hero.webp";
 import { DemoFiveSamples } from "./demo-five-samples";
-import { SubmissionForm } from "./submission-form";
+import { DemoFiveSubmissionForm } from "./demo-five-submission-form";
+import { validStorageOrigin } from "@/lib/demo-five/upload-photo-draft";
 
 const reviews = [
   {
@@ -83,8 +84,8 @@ export function PhotographerDemoFive() {
       </section>
 
       <section className="demo-four-form" aria-labelledby="demo-four-form-title">
-        <div className="demo-four-form-heading"><span className="eyebrow">SUBMIT PHOTOS/VIDEOS</span><h2 id="demo-four-form-title">Photographer&apos;s Info</h2></div>
-        <SubmissionForm />
+        <div className="demo-four-form-heading"><span className="eyebrow">SUBMIT PHOTOS</span><h2 id="demo-four-form-title">Photographer&apos;s Info</h2></div>
+        <DemoFiveSubmissionForm storageOrigin={validStorageOrigin(process.env.SUPABASE_URL)} />
       </section>
     </div>
   );

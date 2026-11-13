@@ -43,7 +43,7 @@ test("the site root loads demo 4 first", async () => {
   assert.doesNotMatch(rootPage, /PhotographerLanding/);
 });
 
-test("demo 5 starts as an independent copy of demo 4", async () => {
+test("demo 5 keeps its independent presentation and isolates the camera form from demo 4", async () => {
   const [demoFour, demoFive, demoFourLanding, demoFiveLanding, demoFourSamples, demoFiveSamples] = await Promise.all([
     readFile(demoFourPath, "utf8"),
     readFile(demoFivePath, "utf8"),
@@ -56,10 +56,10 @@ test("demo 5 starts as an independent copy of demo 4", async () => {
   assert.match(demoFive, /PhotographerDemoFive/);
   assert.match(demoFive, /Photographer Demo 5/);
   const normalize = (source) => source.replaceAll("\r\n", "\n").trimEnd();
-  assert.equal(
-    normalize(demoFiveLanding.replaceAll("DemoFive", "DemoFour").replaceAll("demo-five-samples", "demo-four-samples")),
-    normalize(demoFourLanding),
-  );
+  assert.match(demoFiveLanding, /<DemoFiveSubmissionForm/);
+  assert.doesNotMatch(demoFiveLanding, /<SubmissionForm|Google Drive/);
+  assert.match(demoFourLanding, /<SubmissionForm \/>/);
+  assert.match(await readFile(submissionFormPath, "utf8"), /Google Drive Link/);
   assert.equal(normalize(demoFiveSamples.replaceAll("DemoFive", "DemoFour")), normalize(demoFourSamples));
   assert.doesNotMatch(demoFour, /PhotographerDemoFive|Photographer Demo 5/);
 });
