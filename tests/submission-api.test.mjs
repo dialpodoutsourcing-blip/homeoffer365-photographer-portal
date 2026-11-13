@@ -30,6 +30,14 @@ test("validateSubmission trims a complete submission", () => {
   });
 });
 
+test("validateSubmission canonicalizes HTTPS payment links and rejects scheme shorthand", () => {
+  assert.equal(
+    validateSubmission({ ...validInput, paymentLink: "HTTPS://Venmo.com/u/ada" })?.paymentLink,
+    "https://venmo.com/u/ada",
+  );
+  assert.equal(validateSubmission({ ...validInput, paymentLink: "https:venmo.com/u/ada" }), null);
+});
+
 test("validateSubmission rejects missing, oversized, and malformed fields", () => {
   assert.equal(validateSubmission({ ...validInput, email: "" }), null);
   assert.equal(validateSubmission({ ...validInput, photographerName: "x".repeat(201) }), null);

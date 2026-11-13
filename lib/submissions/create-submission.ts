@@ -58,9 +58,13 @@ export function validateSubmission(value: unknown): SubmissionInput | null {
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   ) return null;
 
+  if (!/^https:\/\//i.test(paymentLink)) return null;
+  let normalizedPaymentLink: string;
   try {
     const url = new URL(paymentLink);
     if (url.protocol !== "https:" || url.username || url.password) return null;
+    normalizedPaymentLink = url.href;
+    if (normalizedPaymentLink.length > FIELD_LIMITS.paymentLink) return null;
   } catch {
     return null;
   }
@@ -83,7 +87,7 @@ export function validateSubmission(value: unknown): SubmissionInput | null {
     phone,
     propertyAddress,
     paymentMethod: paymentMethod as "venmo" | "zelle",
-    paymentLink,
+    paymentLink: normalizedPaymentLink,
     driveLink,
     checklistComplete: record.checklistComplete,
   };

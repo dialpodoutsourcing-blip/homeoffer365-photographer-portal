@@ -61,6 +61,10 @@ export function SubmissionForm() {
     const formData = new FormData(event.currentTarget);
     const driveLink = String(formData.get("driveLink") ?? "").trim();
     const paymentLink = String(formData.get("paymentLink") ?? "").trim();
+    if (!/^https:\/\//i.test(paymentLink)) {
+      setError("Enter a valid HTTPS payment link.");
+      return;
+    }
     try {
       const url = new URL(paymentLink);
       if (url.protocol !== "https:" || url.username || url.password) throw new Error();
