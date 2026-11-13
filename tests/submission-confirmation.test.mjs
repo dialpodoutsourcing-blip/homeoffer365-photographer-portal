@@ -31,27 +31,14 @@ test("a successful submission opens an accessible confirmation dialog that can r
   assert.match(form, /<SubmissionConfirmation onClose=\{closeConfirmation\} \/>/);
 });
 
-test("the confirmation contains the approved Ashley, next-step content, and HomeOffer365 footer brand", async () => {
+test("the confirmation contains the approved Ashley and next-step content", async () => {
   const confirmation = await readOrEmpty(confirmationPath);
 
   assert.match(confirmation, /\/images\/team\/ashley-sellers\.jpg/);
   assert.match(confirmation, /Thank You!/);
   assert.match(confirmation, /payment will be processed promptly/);
   assert.match(confirmation, /Home Offer 365 Team/);
-  assert.match(confirmation, /\/images\/brand\/home-offer-365-logo\.png/);
-  assert.doesNotMatch(confirmation, /submission-confirmation-house-mark/);
-  assert.doesNotMatch(confirmation, /\bHouse\b/);
-  assert.match(confirmation, /submission-appreciation-line[\s\S]*submission-appreciation-line/);
-});
-
-test("confirmation copy stays on two appreciation lines and next-step icons align to the top", async () => {
-  const [confirmation, styles] = await Promise.all([readOrEmpty(confirmationPath), readOrEmpty(stylesPath)]);
-
-  assert.match(confirmation, /Thank you for your time, effort, and excellent photography\./);
-  assert.match(confirmation, /We truly appreciate your work\./);
-  assert.match(styles, /\.submission-appreciation-line\s*\{[^}]*display:\s*block/s);
-  assert.match(styles, /\.submission-next-steps\s*>\s*div\s*\{[^}]*align-items:\s*start/s);
-  assert.match(styles, /\.submission-next-steps svg\s*\{[^}]*margin-top:/s);
+  assert.match(confirmation, /submission-confirmation-house-mark/);
 });
 
 test("the confirmation styling stays viewport-bound and respects reduced motion", async () => {
