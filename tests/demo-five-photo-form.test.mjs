@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { registerHooks } from "node:module";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import { createElement } from "react";
+import React, { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { IDBFactory } from "fake-indexeddb";
 import { createIndexedDbPhotoDraftStore, createPhotoDraftKey } from "../lib/demo-five/photo-draft-store.ts";
@@ -39,6 +39,171 @@ async function savedStore(value) {
   await store.save(value);
   return store;
 }
+
+function componentImports() {
+  return registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === "next/image") return { url: new URL("../node_modules/next/image.js", import.meta.url).href, shortCircuit: true };
+      if (specifier.startsWith("@/")) {
+        const base = new URL(`../${specifier.slice(2)}`, import.meta.url);
+        for (const suffix of [".ts", ".tsx"]) if (existsSync(fileURLToPath(base) + suffix)) return { url: base.href + suffix, shortCircuit: true };
+      }
+      if (specifier.startsWith(".") && context.parentURL?.endsWith(".tsx")) {
+        const base = new URL(specifier, context.parentURL);
+        if (existsSync(fileURLToPath(base) + ".tsx")) return { url: base.href + ".tsx", shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url.endsWith(".tsx")) return { format: "module", shortCircuit: true, source: ts.transpileModule(readFileSync(new URL(url), "utf8"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext } }).outputText };
+      return nextLoad(url, context);
+    },
+  });
+}
+
+// Exercise the real form handlers and render its real children without adding a DOM
+// dependency. Only browser APIs and the root component's hook scheduler are hosted here.
+async function mountedForm(saved) {
+  const hook = componentImports();
+  const { DemoFiveSubmissionForm } = await import("../components/photographer-guide/demo-five-submission-form.tsx");
+  const factory = new IDBFactory();
+  if (saved) await createIndexedDbPhotoDraftStore(factory).save(saved);
+  const original = { window: globalThis.window, document: globalThis.document, createImageBitmap: globalThis.createImageBitmap };
+  const document = { activeElement: null, createElement: () => ({ getContext: () => ({ drawImage() {} }), toBlob: callback => callback(new Blob(["image"], { type: "image/webp" })) }) };
+  globalThis.document = document;
+  globalThis.window = { indexedDB: factory, addEventListener() {}, removeEventListener() {} };
+  globalThis.createImageBitmap = async () => ({ width: 100, height: 80, close() {} });
+  const slots = [], effects = [], cleanups = [];
+  let index = 0, tree;
+  const dispatcher = {
+    useState(initial) {
+      const slot = index++;
+      if (!(slot in slots)) slots[slot] = typeof initial === "function" ? initial() : initial;
+      return [slots[slot], value => { slots[slot] = typeof value === "function" ? value(slots[slot]) : value; }];
+    },
+    useReducer(reducer, initial) {
+      const [value, set] = dispatcher.useState(initial);
+      return [value, action => set(previous => reducer(previous, action))];
+    },
+    useRef(initial) { const [value] = dispatcher.useState(() => ({ current: initial })); return value; },
+    useEffect(effect, dependencies) {
+      const slot = index++;
+      if (!slots[slot] || dependencies.some((value, i) => value !== slots[slot][i])) {
+        slots[slot] = dependencies; effects.push(() => { cleanups[slot]?.(); cleanups[slot] = effect(); });
+      }
+    },
+  };
+  function elements(node = tree) {
+    if (!node || typeof node !== "object") return [];
+    return [node, ...React.Children.toArray(node.props?.children).flatMap(child => elements(child))];
+  }
+  function render() {
+    index = 0;
+    const internals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+    const previous = internals.H;
+    internals.H = dispatcher;
+    try { tree = DemoFiveSubmissionForm({ storageOrigin: "https://storage.example.com" }); }
+    finally { internals.H = previous; }
+    for (const element of elements()) {
+      if (typeof element.type !== "string" || !element.props.ref || element.props.ref.current) continue;
+      const listeners = new Map();
+      element.props.ref.current = { listeners, focus() { document.activeElement = this; }, click() {}, addEventListener(name, action) { listeners.set(name, action); }, removeEventListener(name) { listeners.delete(name); } };
+    }
+    effects.splice(0).forEach(effect => effect());
+    return renderToStaticMarkup(tree);
+  }
+  async function settle() { for (let i = 0; i < 5; i++) await new Promise(resolve => setTimeout(resolve, 0)); return render(); }
+  function find(predicate) { const result = elements().find(predicate); assert.ok(result, "expected rendered control"); return result; }
+  const api = { render, settle, find, elements, html: () => renderToStaticMarkup(tree),
+    field(name, value) { find(node => node.props?.name === name).props.onChange({ target: { value } }); render(); },
+    async next() { await find(node => node.type === "form").props.onSubmit({ preventDefault() {} }); return settle(); },
+    async restore() { await find(node => node.type?.name === "DemoFiveDraftRestore").props.onRestore(saved); return settle(); },
+    close() { cleanups.forEach(cleanup => cleanup?.()); Object.assign(globalThis, original); hook.deregister(); },
+  };
+  render();
+  for (let i = 0; i < 40; i++) {
+    await settle();
+    if (!api.html().includes("Loading saved visits")) break;
+  }
+  return api;
+}
+
+test("wizard validates each visible step and preserves contact and payment values on Back", async () => {
+  const form = await mountedForm();
+  try {
+    let html = form.html();
+    assert.match(html, /Step 1 of 3/);
+    for (const name of ["photographerName", "email", "phone"]) assert.match(html, new RegExp(`name="${name}"`));
+    assert.doesNotMatch(html, /name="paymentMethod"|name="paymentUrl"|name="propertyAddress"|type="file"/);
+    assert.match(html, />Next<\/button>/);
+    await form.next(); assert.match(form.html(), /role="alert"/); assert.match(form.html(), /Step 1 of 3/);
+    form.field("photographerName", "Ada"); form.field("email", "ada@example.com"); form.field("phone", "555-555-5555");
+    html = await form.next(); assert.match(html, /Step 2 of 3/);
+    assert.match(html, /name="paymentMethod"/); assert.match(html, /name="paymentUrl"/);
+    assert.doesNotMatch(html, /name="photographerName"|name="email"|name="phone"|name="propertyAddress"|type="file"/);
+    assert.match(html, />Back<\/button>/); assert.match(html, />Next<\/button>/);
+    await form.next(); assert.match(form.html(), /Step 2 of 3/); assert.match(form.html(), /role="alert"/);
+    form.field("paymentMethod", "Invoice"); form.field("paymentUrl", "https://example.com/pay");
+    html = await form.next(); assert.match(html, /Step 3 of 3/);
+    assert.match(html, /name="propertyAddress"/); assert.match(html, /Take all photos horizontally \(landscape orientation\)/);
+    assert.equal((html.match(/type="file"/g) ?? []).length, 2);
+    assert.equal((html.match(/capture="environment"/g) ?? []).length, 1);
+    assert.match(html, />Take Photo<\/button>/); assert.match(html, />Upload Image<\/button>/);
+    form.find(node => node.type === "button" && node.props.children === "Back").props.onClick(); form.render();
+    assert.match(form.html(), /value="Invoice"/);
+    form.find(node => node.type === "button" && node.props.children === "Back").props.onClick(); form.render();
+    assert.match(form.html(), /value="Ada"/); assert.match(form.html(), /value="ada@example.com"/);
+  } finally { form.close(); }
+});
+
+test("restored photos open Step 3 with five counted tabs, and only Interior exposes N/A", async () => {
+  const form = await mountedForm(draft());
+  try {
+    await form.restore(); const html = form.html();
+    assert.match(html, /Step 3 of 3/);
+    for (const [label, count] of [["Exterior", 4], ["Interior", 4], ["Mechanical", 1], ["Condition", 1], ["Other", 0]]) {
+      assert.match(html, new RegExp(`role="tab"[^>]*aria-label="${label}, ${count} photos"`));
+    }
+    assert.doesNotMatch(html, /Mark feature N\/A/);
+    const tab = label => form.find(node => node.props?.role === "tab" && node.props["aria-label"].startsWith(label));
+    tab("Interior").props.onClick(); form.render();
+    assert.match(form.html(), /Basement N\/A/); assert.match(form.html(), /Attic N\/A/); assert.match(form.html(), /Garage N\/A/);
+    tab("Other").props.onClick(); form.render();
+    assert.match(form.html(), /No Other photos yet/); assert.doesNotMatch(form.html(), /Mark feature N\/A/);
+    tab("Interior").props.onClick(); form.render();
+    const photo = { ...draft().photos[0], category: "other", photoName: "Garden detail" };
+    // The editor's saved classification determines the newly active tab.
+    const camera = form.find(node => node.type === "input" && node.props.capture === "environment");
+    const trigger = form.find(node => node.type === "button" && node.props.children === "Take Photo");
+    trigger.props.onClick({ currentTarget: trigger.props.ref?.current ?? { focus() {} } });
+    await camera.props.onChange({ currentTarget: { files: [new File(["image"], "photo.jpg", { type: "image/jpeg" })], value: "photo.jpg" } });
+    await form.settle();
+    let editor = form.find(node => node.type?.name === "DemoFivePhotoEditor");
+    assert.equal(editor.props.edit.category, ""); assert.equal(editor.props.edit.existing, undefined);
+    await editor.props.onSave(photo); await form.settle();
+    assert.match(form.html(), /aria-selected="true"[^>]*aria-label="Other, 1 photos"/);
+    assert.match(form.html(), /Garden detail/);
+  } finally { form.close(); }
+});
+
+test("shared retake cancellation restores focus and keeps the saved photo", async () => {
+  const saved = draft(), form = await mountedForm(saved);
+  try {
+    await form.restore();
+    const panel = form.find(node => node.type?.name === "DemoFivePhotoCategory");
+    let focused = 0; const trigger = { focus() { focused++; } };
+    panel.props.onRetake(saved.photos[0], trigger);
+    const camera = form.find(node => node.type === "input" && node.props.capture === "environment");
+    camera.props.ref.current.listeners.get("cancel")(); await form.settle();
+    assert.equal(focused, 1); assert.match(form.html(), /No photo was added/);
+    assert.match(form.html(), /View 0/); assert.equal(form.elements().some(node => node.type?.name === "DemoFivePhotoEditor"), false);
+    panel.props.onRetake(saved.photos[0], trigger);
+    await camera.props.onChange({ currentTarget: { files: [new File(["image"], "retake.jpg", { type: "image/jpeg" })], value: "retake.jpg" } });
+    await form.settle();
+    const editor = form.find(node => node.type?.name === "DemoFivePhotoEditor");
+    assert.equal(editor.props.edit.category, "exterior"); assert.equal(editor.props.edit.existing.clientPhotoId, "photo-0");
+  } finally { form.close(); }
+});
 
 test("uploads at concurrency three, persists completed IDs, and only confirms after finalize", async () => {
   const { uploadPhotoDraft } = await subject();
@@ -320,21 +485,17 @@ test("signed transport encodes path and token and rejects missing or insecure or
 
 test("Demo 5 exposes its scoped camera, editor, persistence, and accessible form contracts", async () => {
   const read = name => readFile(new URL(`../components/photographer-guide/${name}.tsx`, import.meta.url), "utf8").catch(() => "");
-  const [form, category, editor, styles] = await Promise.all([read("demo-five-submission-form"), read("demo-five-photo-category"), read("demo-five-photo-editor"), readFile(new URL("../app/globals.css", import.meta.url), "utf8")]);
+  const [form, category, editor] = await Promise.all([read("demo-five-submission-form"), read("demo-five-photo-category"), read("demo-five-photo-editor")]);
   assert.ok(form, "Demo Five form must exist");
   assert.doesNotMatch(form, /Google Drive|driveLink/);
   for (const name of ["photographerName", "email", "phone", "paymentMethod", "paymentUrl", "propertyAddress"]) assert.ok(form.includes(`name="${name}"`));
   for (const helper of ["findAddressLocalities", "applyAddressLocality", "formatAddressLocality", "createIndexedDbPhotoDraftStore", "validatePhotoMinimums", "SubmissionConfirmation"]) assert.ok(form.includes(helper));
   assert.match(form, /4 Exterior.*4 Interior.*1 Mechanical.*1 Condition/);
-  assert.match(category, /accept="image\/\*" capture="environment"/);
-  assert.match(category, /addEventListener\("cancel"/);
-  assert.match(category, /Choose (?:an )?image/);
   assert.doesNotMatch(category, /demo-five-type-hint|getPhotoTypeOptions/);
   assert.match(category, /OPTIONAL_FEATURES\[category\]\.length\s*>\s*0/);
   assert.match(category, /<details className="demo-five-na-disclosure">/);
   assert.match(category, /<summary>Mark feature N\/A<\/summary>/);
-  assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.demo-five-photo-form \.demo-five-category > summary, \.demo-five-photo-form \.demo-five-category-content/);
-  for (const action of ["Take Photo", "View", "Retake", "Remove", "N\/A"]) assert.match(category, new RegExp(action));
+  for (const action of ["View", "Retake", "Remove", "N\/A"]) assert.match(category, new RegExp(action));
   assert.match(editor, /role="dialog"/); assert.match(editor, /aria-modal="true"/);
   assert.match(editor, /Photo name/); assert.match(editor, /Photo type/); assert.match(editor, /Condition status/); assert.match(editor, /Description/);
   assert.match(editor, /\.focus\(/); assert.match(editor, /validateDraftPhoto/);
@@ -380,7 +541,7 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
     const { DemoFivePhotoEditor, photoLabel } = await import("../components/photographer-guide/demo-five-photo-editor.tsx");
     const { DemoFiveSubmissionForm } = await import("../components/photographer-guide/demo-five-submission-form.tsx");
     const formHtml = renderToStaticMarkup(createElement(DemoFiveSubmissionForm, { storageOrigin: "https://storage.example.com" }));
-    assert.match(formHtml, /Take all photos horizontally \(landscape orientation\)\.[\s\S]*demo-five-categories/);
+    assert.match(formHtml, /Step 1 of 3/);
     assert.deepEqual([
       photoLabel("front"), photoLabel("exterior_ac_condenser"), photoLabel("roof_soffit_and_gutters"),
       photoLabel("hallway_room_layout"), photoLabel("kitchen_under_sink_plumbing"), photoLabel("basement_window_and_egress"),
@@ -420,7 +581,7 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
     assert.match(retake, /<option value="interior" selected="">Interior<\/option>/);
     assert.match(retake, /<option value="kitchen" selected="">Kitchen<\/option>/);
     const props = { category: "exterior", photos: draft().photos.slice(0, 2), notApplicable: [], disabled: false,
-      onCapture() {}, onView() {}, onRemove() {}, onNotApplicable() {}, onCancelCapture() {} };
+      onRetake() {}, onView() {}, onRemove() {}, onNotApplicable() {} };
     const html = renderToStaticMarkup(createElement(DemoFivePhotoCategory, props));
     assert.match(html, /2\/4 photos — Needed/);
     assert.equal((html.match(/<li>/g) ?? []).length, 2);
@@ -434,7 +595,7 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
     assert.doesNotMatch(interior, /<details class="demo-five-na-disclosure" open/);
     const mechanical = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, category: "mechanical", photos: [], notApplicable: [] }));
     assert.doesNotMatch(mechanical, /Mark feature N\/A/);
-    assert.match(html, /accept="image\/\*" capture="environment"/);
+    assert.doesNotMatch(html, /type="file"|Take Photo|Upload Image/);
     assert.match(html, /aria-label="View View 0"/);
     const complete = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, photos: draft().photos.slice(0, 4) }));
     assert.match(complete, /4\/4 photos — Complete/);

@@ -974,42 +974,59 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
   .landing-demo-three .landing-hero-copy { padding-inline: 22px; }
 }
 /* Demo 5 keeps its camera workflow isolated from the shared submission form. */
-.demo-five-photo-form { color: #172b3a; min-width: 0; }
+.demo-five-photo-form { color: #172b3a; min-width: 0; max-width: 880px; margin-inline: auto; padding: clamp(18px, 4vw, 36px); border: 1px solid #dbe4eb; border-radius: 14px; background: #fff; box-shadow: 0 8px 30px #173f5f08; }
 .demo-five-photo-form header { margin-bottom: 24px; }
 .demo-five-photo-form h2 { font-size: clamp(24px, 4vw, 32px); margin: 0 0 12px; }
 .demo-five-photo-form p { line-height: 1.6; overflow-wrap: anywhere; }
+.demo-five-photo-form .demo-five-step-progress p { color: #52616e; font-size: 13px; font-weight: 700; margin: 0 0 10px; }
+.demo-five-photo-form .demo-five-step-progress ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0; margin: 0 0 28px; list-style: none; }
+.demo-five-photo-form .demo-five-step-progress li { height: 5px; background: #e4ebf0; border-radius: 10px; }
+.demo-five-photo-form .demo-five-step-progress .is-reached { background: #173f5f; }
+.demo-five-photo-form .demo-five-step-title { font-size: clamp(21px, 3vw, 26px); margin: 0 0 24px; }
+.demo-five-photo-form .demo-five-step-title:focus-visible { outline: 3px solid #13769d; outline-offset: 5px; }
 .demo-five-photo-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .demo-five-photo-form legend { font-weight: 700; margin-bottom: 16px; }
-.demo-five-photo-form .demo-five-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.demo-five-photo-form .demo-five-fields { display: grid; grid-template-columns: 1fr; gap: 22px; }
 .demo-five-photo-form label { display: grid; gap: 7px; font-size: 14px; font-weight: 600; }
-.demo-five-photo-form input:not([type="checkbox"]):not([type="file"]), .demo-five-photo-form select, .demo-five-photo-form textarea { width: 100%; min-width: 0; border: 1px solid #c7d1da; border-radius: 8px; padding: 12px; background: #fff; color: #172b3a; font: inherit; }
+.demo-five-photo-form input:not([type="checkbox"]):not([type="file"]), .demo-five-photo-form select, .demo-five-photo-form textarea { width: 100%; min-width: 0; min-height: 48px; border: 1px solid #c7d1da; border-radius: 10px; padding: 12px; background: #fff; color: #172b3a; font: inherit; font-size: 16px; }
 .demo-five-photo-form textarea { min-height: 90px; resize: vertical; }
 .demo-five-photo-form .demo-five-condition-help { margin: -4px 0 4px; padding: 9px 11px; border-radius: 7px; background: #f3f7fa; color: #40586a; font-size: 13px; }
-.demo-five-photo-form input:focus-visible, .demo-five-photo-form select:focus-visible, .demo-five-photo-form textarea:focus-visible, .demo-five-photo-form button:focus-visible, .demo-five-photo-form summary:focus-visible { outline: 3px solid #13769d; outline-offset: 3px; }
-.demo-five-photo-form button { min-height: 44px; padding: 10px 14px; border: 1px solid #b8c9d6; border-radius: 8px; color: #143f60; background: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
+.demo-five-photo-form input:focus-visible, .demo-five-photo-form select:focus-visible, .demo-five-photo-form textarea:focus-visible, .demo-five-photo-form button:focus-visible, .demo-five-photo-form summary:focus-visible, .demo-five-photo-form [role="tabpanel"]:focus-visible { outline: 3px solid #13769d; outline-offset: 3px; }
+.demo-five-photo-form button { min-height: 44px; padding: 10px 16px; border: 1px solid #b8c9d6; border-radius: 10px; color: #143f60; background: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
+.demo-five-photo-form button:hover:not(:disabled) { border-color: #173f5f; box-shadow: 0 2px 8px #173f5f12; }
 .demo-five-photo-form button:disabled { opacity: .55; cursor: not-allowed; }
 .demo-five-photo-form .demo-five-address { position: relative; }
 .demo-five-photo-form small { display: block; color: #52616e; line-height: 1.5; margin-top: 5px; }
 .demo-five-photo-form .demo-five-address-options { position: absolute; z-index: 5; top: 76px; width: 100%; border: 1px solid #c7d1da; border-radius: 8px; background: white; box-shadow: 0 8px 24px #10273d22; overflow: hidden; }
 .demo-five-photo-form .demo-five-address-options button { display: block; width: 100%; text-align: left; border: 0; border-radius: 0; }
 .demo-five-photo-form .demo-five-address-options button[aria-selected="true"], .demo-five-photo-form .demo-five-address-options button:hover { background: #e8f3fa; }
-.demo-five-photo-form .demo-five-orientation-guidance { margin: 24px 0 -12px; padding: 12px 14px; border-left: 4px solid #13769d; border-radius: 6px; background: #e8f3fa; color: #173f5f; }
-.demo-five-photo-form .demo-five-categories { display: grid; gap: 16px; margin-top: 28px; }
-.demo-five-photo-form .demo-five-category { border: 1px solid #d2dce4; border-radius: 12px; overflow: hidden; }
-.demo-five-photo-form .demo-five-category summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; cursor: pointer; padding: 18px; background: #f3f7fa; }
-.demo-five-photo-form .demo-five-category summary strong { font-size: 18px; }
-.demo-five-photo-form .demo-five-category summary span { font-size: 13px; text-align: right; }
-.demo-five-photo-form .demo-five-category-content { padding: 18px; }
+.demo-five-photo-form .demo-five-orientation-guidance { margin: 24px 0 16px; padding: 14px 16px; border-left: 4px solid #13769d; border-radius: 10px; background: #edf5fa; color: #173f5f; }
+.demo-five-photo-form .demo-five-orientation-guidance span { display: block; font-size: 13px; margin-top: 3px; }
+.demo-five-photo-form .demo-five-capture-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 32px; }
+.demo-five-photo-form .demo-five-capture-actions button { flex: 1; min-height: 52px; }
+.demo-five-photo-form .demo-five-review-heading h4 { margin: 0 0 8px; font-size: 19px; }
+.demo-five-photo-form .demo-five-review-heading p { font-size: 13px; color: #52616e; margin: 0 0 18px; }
+.demo-five-photo-form .demo-five-photo-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.demo-five-photo-form .demo-five-photo-tabs button { display: flex; align-items: center; gap: 8px; border-radius: 24px; font-size: 13px; padding: 9px 13px; }
+.demo-five-photo-form .demo-five-photo-tabs button span { font-size: 12px; opacity: .8; }
+.demo-five-photo-form .demo-five-photo-tabs button[aria-selected="true"] { color: #fff; background: #173f5f; border-color: #173f5f; }
+.demo-five-photo-form .demo-five-categories { margin-top: 24px; min-width: 0; }
+.demo-five-photo-form .demo-five-category { min-width: 0; }
+.demo-five-photo-form .demo-five-category-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid #e1e8ee; }
+.demo-five-photo-form .demo-five-category-heading strong { font-size: 18px; }
+.demo-five-photo-form .demo-five-category-heading span { color: #52616e; font-size: 13px; }
+.demo-five-photo-form .demo-five-category-content { padding-block: 16px; }
+.demo-five-photo-form .demo-five-empty { color: #52616e; padding: 18px; background: #f5f8fa; border-radius: 12px; font-size: 14px; }
 .demo-five-photo-form .demo-five-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.demo-five-photo-form .demo-five-actions > button:first-child, .demo-five-photo-form .demo-five-submit > button, .demo-five-photo-form .demo-five-editor button[type="submit"] { background: #173f5f; color: white; border-color: #173f5f; }
+.demo-five-photo-form .demo-five-capture-actions > button:first-child, .demo-five-photo-form .demo-five-primary, .demo-five-photo-form .demo-five-editor button[type="submit"] { background: #173f5f; color: white; border-color: #173f5f; }
 .demo-five-photo-form .demo-five-na-disclosure { margin-top: 10px; }
-.demo-five-photo-form .demo-five-na-disclosure > summary { display: inline-block; padding: 4px 0; color: #52616e; background: transparent; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.demo-five-photo-form .demo-five-na-disclosure > summary { display: flex; align-items: center; min-height: 44px; width: fit-content; padding: 8px 0; cursor: pointer; color: #52616e; background: transparent; font-size: 13px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .demo-five-photo-form .demo-five-na { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 6px; }
-.demo-five-photo-form .demo-five-na label { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13px; }
+.demo-five-photo-form .demo-five-na label { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; }
 .demo-five-photo-form input[type="checkbox"] { width: 18px; height: 18px; accent-color: #173f5f; }
 .demo-five-photo-form .demo-five-thumbnails { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); gap: 14px; margin: 14px 0 0; padding: 0; list-style: none; }
 .demo-five-photo-form .demo-five-thumbnails:empty { margin-top: 0; }
-.demo-five-photo-form .demo-five-thumbnails li { border: 1px solid #d2dce4; border-radius: 10px; padding: 10px; min-width: 0; }
+.demo-five-photo-form .demo-five-thumbnails li { border: 1px solid #d2dce4; border-radius: 12px; padding: 12px; min-width: 0; background: #fff; }
 .demo-five-photo-form .demo-five-thumbnails img { display: block; width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; }
 .demo-five-photo-form .demo-five-thumbnails strong { display: block; overflow-wrap: anywhere; }
 .demo-five-photo-form .demo-five-thumbnails .demo-five-actions { margin-top: 12px; }
@@ -1021,7 +1038,9 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .demo-five-photo-form progress { width: 100%; accent-color: #173f5f; }
 .demo-five-photo-form .demo-five-notice { font-size: 13px; }
 .demo-five-photo-form .demo-five-error { background: #fff2ee; border: 1px solid #e3b2a3; color: #8a2f1c; padding: 12px; border-radius: 8px; }
-.demo-five-photo-form .demo-five-submit { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-top: 18px; border-top: 1px solid #d2dce4; }
+.demo-five-photo-form .demo-five-submit { display: flex; align-items: center; justify-content: flex-end; gap: 18px; margin-top: 24px; padding-top: 24px; border-top: 1px solid #d2dce4; }
+.demo-five-photo-form .demo-five-submit .demo-five-back { margin-right: auto; }
+.demo-five-photo-form .demo-five-submit small { flex: 1; margin: 0; }
 .demo-five-photo-form .demo-five-submit button { flex-shrink: 0; padding-inline: 22px; }
 .demo-five-photo-form .demo-five-editor { position: fixed; inset: 0; margin: auto; width: min(580px, calc(100% - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 24px; border: 0; border-radius: 16px; color: #172b3a; background: white; box-shadow: 0 20px 70px #0005; }
 .demo-five-photo-form .demo-five-editor::backdrop { background: #0b1729b3; }
@@ -1031,7 +1050,9 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .demo-five-photo-form .demo-five-editor .demo-five-actions { justify-content: flex-end; }
 @media (max-width: 620px) {
   .demo-five-photo-form .demo-five-fields { grid-template-columns: 1fr; }
-  .demo-five-photo-form .demo-five-category > summary, .demo-five-photo-form .demo-five-category-content { padding: 14px; }
+  .demo-five-photo-form .demo-five-category-content { padding-block: 14px; }
   .demo-five-photo-form .demo-five-submit { align-items: stretch; flex-direction: column; }
+  .demo-five-photo-form .demo-five-submit .demo-five-back { margin-right: 0; align-self: flex-start; }
+  .demo-five-photo-form .demo-five-capture-actions { flex-direction: column; }
   .demo-five-photo-form .demo-five-editor { padding: 18px; }
 }
