@@ -1004,7 +1004,7 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .demo-five-photo-form .demo-five-orientation-guidance span { display: block; font-size: 13px; margin-top: 3px; }
 .demo-five-photo-form .demo-five-capture-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 32px; }
 .demo-five-photo-form .demo-five-capture-actions button { flex: 1; min-height: 52px; }
-.demo-five-photo-form .demo-five-review-panel { min-width: 0; padding: clamp(18px, 4vw, 28px); border: 1px solid #d7e1e8; border-radius: 16px; background: linear-gradient(180deg, #f8fbfd 0, #fff 180px); box-shadow: 0 10px 28px #173f5f0a; }
+.demo-five-photo-form .demo-five-review-panel { min-width: 0; }
 .demo-five-photo-form .demo-five-review-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: end; margin-bottom: 20px; }
 .demo-five-photo-form .demo-five-review-kicker { display: block; margin-bottom: 4px; color: #13769d; font-size: 11px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
 .demo-five-photo-form .demo-five-review-heading h4 { margin: 0; font-size: clamp(20px, 3vw, 24px); letter-spacing: -.015em; }
@@ -1071,6 +1071,5 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
   .demo-five-photo-form .demo-five-editor { padding: 18px; }
 }
 @media (max-width: 360px) {
-  .demo-five-photo-form .demo-five-review-panel { padding: 15px; }
   .demo-five-photo-form .demo-five-photo-tabs button { padding: 9px; font-size: 11px; }
 }
