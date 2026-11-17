@@ -9,9 +9,10 @@ const demoOneAliasPath = new URL("../app/photographers/demo-1/page.tsx", import.
 const demoTwoPath = new URL("../app/photographers/demo-2/page.tsx", import.meta.url);
 const demoThreePath = new URL("../app/photographers/demo-3/page.tsx", import.meta.url);
 const demoFourPath = new URL("../app/photographers/demo-4/page.tsx", import.meta.url);
-const demoFivePath = new URL("../app/photographers/demo-5/page.tsx", import.meta.url);
+const demoFiveLegacyPath = new URL("../app/photographers/demo-5/page.tsx", import.meta.url);
+const homeownersPath = new URL("../app/photographers/homeowners/page.tsx", import.meta.url);
 const demoFourLandingPath = new URL("../components/photographer-guide/photographer-demo-four.tsx", import.meta.url);
-const demoFiveLandingPath = new URL("../components/photographer-guide/photographer-demo-five.tsx", import.meta.url);
+const homeownersLandingPath = new URL("../components/photographer-guide/homeowners-page.tsx", import.meta.url);
 const demoFourSamplesPath = new URL("../components/photographer-guide/demo-four-samples.tsx", import.meta.url);
 const demoFiveSamplesPath = new URL("../components/photographer-guide/demo-five-samples.tsx", import.meta.url);
 const stylesPath = new URL("../app/globals.css", import.meta.url);
@@ -43,25 +44,28 @@ test("the site root loads demo 4 first", async () => {
   assert.doesNotMatch(rootPage, /PhotographerLanding/);
 });
 
-test("demo 5 keeps its independent presentation and isolates the camera form from demo 4", async () => {
-  const [demoFour, demoFive, demoFourLanding, demoFiveLanding, demoFourSamples, demoFiveSamples] = await Promise.all([
+test("homeowners succeeds demo 5 while preserving its independent camera form", async () => {
+  const [demoFour, demoFiveLegacy, homeowners, demoFourLanding, homeownersLanding, demoFourSamples, demoFiveSamples] = await Promise.all([
     readFile(demoFourPath, "utf8"),
-    readFile(demoFivePath, "utf8"),
+    readFile(demoFiveLegacyPath, "utf8"),
+    readFile(homeownersPath, "utf8"),
     readFile(demoFourLandingPath, "utf8"),
-    readFile(demoFiveLandingPath, "utf8"),
+    readFile(homeownersLandingPath, "utf8"),
     readFile(demoFourSamplesPath, "utf8"),
     readFile(demoFiveSamplesPath, "utf8"),
   ]);
 
-  assert.match(demoFive, /PhotographerDemoFive/);
-  assert.match(demoFive, /Photographer Demo 5/);
+  assert.match(homeowners, /HomeownersPage/);
+  assert.match(homeowners, /Homeowners/);
+  assert.doesNotMatch(homeowners, /Photographer Demo 5/);
+  assert.match(demoFiveLegacy, /permanentRedirect\("\/photographers\/homeowners"\)/);
   const normalize = (source) => source.replaceAll("\r\n", "\n").trimEnd();
-  assert.match(demoFiveLanding, /<DemoFiveSubmissionForm/);
-  assert.doesNotMatch(demoFiveLanding, /<SubmissionForm|Google Drive/);
+  assert.match(homeownersLanding, /<DemoFiveSubmissionForm/);
+  assert.doesNotMatch(homeownersLanding, /<SubmissionForm|Google Drive/);
   assert.match(demoFourLanding, /<SubmissionForm \/>/);
   assert.match(await readFile(submissionFormPath, "utf8"), /Google Drive Link/);
   assert.equal(normalize(demoFiveSamples.replaceAll("DemoFive", "DemoFour")), normalize(demoFourSamples));
-  assert.doesNotMatch(demoFour, /PhotographerDemoFive|Photographer Demo 5/);
+  assert.doesNotMatch(demoFour, /HomeownersPage|Photographer Demo 5/);
 });
 
 test("demo 3 presents the Home Offer 365 welcome without changing demo 2", async () => {

@@ -38,7 +38,7 @@ const reviews = [
   },
 ] as const;
 
-export function PhotographerDemoFive() {
+export function HomeownersPage() {
   return (
     <div className="photographer-demo-four">
       <section className="demo-four-hero" aria-labelledby="demo-four-title">
