@@ -11,7 +11,7 @@ const now = Date.parse("2026-11-13T12:00:00Z");
 function manifest() {
   return {
     idempotencyKey: randomUUID(),
-    photographer: { name: "Ada", email: " ADA@Example.com ", phone: "123", paymentMethod: "Invoice", paymentUrl: "https://example.com/pay" },
+    photographer: { name: "Ada", email: " ADA@Example.com ", phone: "123" },
     propertyAddress: "123 Example Street",
     notApplicable: [{ category: "interior", photoType: "attic" }, { category: "interior", photoType: "basement" }],
     photos: ["exterior", "exterior", "exterior", "exterior", "interior", "interior", "interior", "interior", "mechanical", "condition"].map((category, i) => ({
@@ -132,7 +132,6 @@ test("HTTP boundaries reject malformed JSON and absent configuration safely", as
 });
 
 for (const [name, mutate] of [
-  ["invalid payment HTTPS", m => { m.photographer.paymentUrl = "http://example.com"; }],
   ["insufficient minimums", m => m.photos.pop()],
   ["duplicate IDs", m => { m.photos[1].clientPhotoId = m.photos[0].clientPhotoId; }],
   ["wrong category", m => { m.photos[0].category = "other"; }],
@@ -165,14 +164,14 @@ test("prepare creates normalized contact, private paths, two-hour session and si
   assert.deepEqual(s.expectedPaths.map(p => Object.keys(p).sort()), Array(10).fill(["clientPhotoId", "objectPath"]));
 });
 
-test("prepare reuses case-insensitive email, updates contact/payment and retries reordered manifests", async () => {
+test("prepare reuses case-insensitive email, updates homeowner contact and retries reordered manifests", async () => {
   const f = fixture(), id = randomUUID();
   f.people.set(id, { ...manifest().photographer, id, email: " Ada@Example.COM " });
   const input = manifest(), first = await preparePhotoSubmission(input, f.dependencies);
-  input.photos.reverse(); input.notApplicable.reverse(); input.photographer.phone = "456"; input.photographer.paymentUrl = "https://example.com/new";
+  input.photos.reverse(); input.notApplicable.reverse(); input.photographer.phone = "456";
   const second = await preparePhotoSubmission(input, f.dependencies);
   assert.equal(second.sessionId, first.sessionId); assert.equal(f.sessions.size, 1); assert.equal(f.people.size, 1);
-  assert.equal(f.people.get(id).phone, "456"); assert.equal(f.people.get(id).paymentUrl, "https://example.com/new");
+  assert.equal(f.people.get(id).phone, "456");
   assert.deepEqual(second.uploads.map(u => u.objectPath), first.uploads.map(u => u.objectPath));
 });
 

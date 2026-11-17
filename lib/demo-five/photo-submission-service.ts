@@ -1,11 +1,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
-import { validateSubmissionManifest, type PhotoMetadata, type PhotographerDetails, type PhotoSubmissionManifest, type NotApplicableSelection } from "./photo-workflow.ts";
+import { validateSubmissionManifest, type PhotoMetadata, type HomeownerDetails, type PhotoSubmissionManifest, type NotApplicableSelection } from "./photo-workflow.ts";
 
 type ExpectedPath = { clientPhotoId: string; objectPath: string };
 type UploadedPhoto = PhotoMetadata & { objectPath: string };
-type Photographer = PhotographerDetails & { id: string };
+type Photographer = HomeownerDetails & { id: string };
 type UploadSession = {
   id: string;
   photographerId: string;
@@ -21,7 +21,7 @@ type FinalizedSubmission = { submissionId: string; photographerId: string; photo
 export type PhotoSubmissionOperations = {
   consumeRateLimit(subjectHash: string, phase: "prepare" | "finalize", idempotencyKey: string | null): Promise<number>;
   findPhotographer(email: string): Promise<Photographer | null>;
-  savePhotographer(details: PhotographerDetails, id: string | undefined, updatedAt: string): Promise<Photographer>;
+  savePhotographer(details: HomeownerDetails, id: string | undefined, updatedAt: string): Promise<Photographer>;
   findSession(key: string): Promise<UploadSession | null>;
   createSession(session: UploadSession): Promise<UploadSession>;
   signUpload(path: string): Promise<string>;
@@ -79,7 +79,7 @@ function sessionRow(row: Record<string, unknown>): UploadSession {
 }
 function personRow(row: Record<string, unknown>): Photographer {
   return { id: row.id as string, name: row.name as string, email: row.email as string,
-    phone: row.phone as string, paymentMethod: row.payment_method as string, paymentUrl: row.payment_url as string };
+    phone: row.phone as string };
 }
 
 /** Supabase is used only on the server with a service-role key. The injectable
@@ -108,8 +108,9 @@ export function createPhotoSubmissionOperations(client: SupabaseClient, fetcher:
       }
     },
     async savePhotographer(details, id, updatedAt) {
-      const row = { name: details.name, email: details.email, phone: details.phone,
-        payment_method: details.paymentMethod, payment_url: details.paymentUrl, updated_at: updatedAt };
+      // Omitting the legacy payment columns gives new homeowners NULL values
+      // while retaining any historical values when an existing contact updates.
+      const row = { name: details.name, email: details.email, phone: details.phone, updated_at: updatedAt };
       const table = client.from("photographers");
       const { data, error } = await (id ? table.update(row).eq("id", id) : table.insert(row)).select("*").single();
       if (error) throw error;

@@ -9,11 +9,13 @@ const migrationUrl = new URL("../supabase/migrations/202611130001_demo_five_phot
 const sampleTypesMigrationUrl = new URL("../supabase/migrations/202611130002_demo_five_sample_photo_types.sql", import.meta.url);
 const conditionStatusesMigrationUrl = new URL("../supabase/migrations/202611130003_demo_five_condition_statuses.sql", import.meta.url);
 const otherCategoryMigrationUrl = new URL("../supabase/migrations/202611130004_demo_five_other_category.sql", import.meta.url);
+const homeownerContactsMigrationUrl = new URL("../supabase/migrations/202611170001_homeowner_contacts_optional_payment.sql", import.meta.url);
 let db;
 let migration;
 let sampleTypesMigration;
 let conditionStatusesMigration;
 let otherCategoryMigration;
+let homeownerContactsMigration;
 const legacyTypes = { exterior: ["sides", "roof", "yard", "driveway", "outbuildings", "damage"], interior: ["bedroom", "under_sink", "damage"], mechanical: ["hvac", "electrical_panel", "plumbing"], condition: [], other: [] };
 const bootstrap = `create role anon; create role authenticated; create role service_role;
   create schema storage;
@@ -24,12 +26,14 @@ before(async () => {
   sampleTypesMigration = await readFile(sampleTypesMigrationUrl, "utf8");
   conditionStatusesMigration = await readFile(conditionStatusesMigrationUrl, "utf8");
   otherCategoryMigration = await readFile(otherCategoryMigrationUrl, "utf8");
+  homeownerContactsMigration = await readFile(homeownerContactsMigrationUrl, "utf8");
   db = new PGlite();
   await db.exec(bootstrap);
   await db.exec(migration);
   await db.exec(sampleTypesMigration);
   await db.exec(conditionStatusesMigration);
   await db.exec(otherCategoryMigration);
+  await db.exec(homeownerContactsMigration);
 });
 after(async () => { await db?.close(); });
 
@@ -84,6 +88,17 @@ test("fresh schema has required columns, foreign keys, private image bucket, and
   assert.deepEqual((await db.query("select public,file_size_limit::int,allowed_mime_types from storage.buckets where id='photographer-photos'")).rows[0],
     { public: false, file_size_limit: 10485760, allowed_mime_types: ["image/jpeg", "image/webp"] });
   assert.match(migration, /photographer-photos[\s\S]*false[\s\S]*image\/jpeg[\s\S]*image\/webp/i);
+});
+
+test("homeowner contacts do not require payment data and legacy payment values are preserved", async () => {
+  const legacyId = randomUUID();
+  await db.query(`insert into photographers (id,name,email,phone,payment_method,payment_url)
+    values ($1,'Legacy homeowner',$2,'123','Invoice','https://example.com/pay')`, [legacyId, `${legacyId}@example.com`]);
+  await db.query("insert into photographers (name,email,phone) values ('New homeowner','new-homeowner@example.com','456')");
+  assert.deepEqual((await db.query("select payment_method,payment_url from photographers where id=$1", [legacyId])).rows[0],
+    { payment_method: "Invoice", payment_url: "https://example.com/pay" });
+  assert.deepEqual((await db.query("select payment_method,payment_url from photographers where email='new-homeowner@example.com'")).rows[0],
+    { payment_method: null, payment_url: null });
 });
 
 test("database classification accepts every selectable photo type and preserves legacy types", async () => {
@@ -185,6 +200,8 @@ test("migration preserves populated owner tables and can be applied again", asyn
   }
   const priorRows = (await legacy.query("select * from photographer_property_photos order by id")).rows;
   await legacy.exec(otherCategoryMigration);
+  await legacy.exec(homeownerContactsMigration);
+  await legacy.exec(homeownerContactsMigration);
   assert.deepEqual((await legacy.query("select * from photographer_property_photos order by id")).rows, priorRows);
   for (const conditionStatus of CONDITION_STATUSES) {
     await legacy.query(`insert into photographer_property_photos
