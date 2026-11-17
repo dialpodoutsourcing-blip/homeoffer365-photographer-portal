@@ -144,13 +144,13 @@ test("wizard uses two homeowner steps with no payment controls and preserves con
     html = await form.next(); assert.match(html, /Step 2 of 2/);
     assert.doesNotMatch(html, /paymentMethod|paymentUrl|Payment Information/);
     assert.match(html, /name="propertyAddress"/); assert.match(html, /Take all photos horizontally \(landscape orientation\)/);
-    assert.equal((html.match(/type="file"/g) ?? []).length, 1);
-    assert.equal((html.match(/capture="environment"/g) ?? []).length, 0);
-    assert.match(html, />Take Photos<\/button>/); assert.match(html, />Upload Photos<\/button>/);
+    assert.equal((html.match(/type="file"/g) ?? []).length, 2);
+    assert.equal((html.match(/capture="environment"/g) ?? []).length, 1);
+    assert.match(html, />Take Photo<\/button>/); assert.match(html, />Upload Photos<\/button>/);
     assert.equal(form.elements().some(node => node.type?.name === "DemoFiveLiveCamera"), false);
     const upload = form.find(node => node.type === "input" && node.props.multiple === true);
     assert.equal(upload.props.capture, undefined);
-    assert.equal(form.elements().some(node => node.type === "input" && node.props.capture === "environment"), false);
+    assert.equal(form.elements().some(node => node.type === "input" && node.props.capture === "environment"), true);
     assert.doesNotMatch(html, /Photo name|Photo type|Condition status|Description/);
     form.find(node => node.type === "button" && node.props.children === "Back").props.onClick(); form.render();
     assert.match(form.html(), /value="Ada"/); assert.match(form.html(), /value="ada@example.com"/);
@@ -177,11 +177,10 @@ test("restored photos open Step 2 and new captures save automatically in the cho
     assert.match(form.html(), /No Other photos yet/); assert.doesNotMatch(form.html(), /Mark feature N\/A/);
     const area = form.find(node => node.type === "select" && node.props.value === "");
     area.props.onChange({ target: { value: "other" } }); form.render();
-    const trigger = form.find(node => node.type === "button" && node.props.children === "Take Photos");
+    const trigger = form.find(node => node.type === "button" && node.props.children === "Take Photo");
     trigger.props.onClick({ currentTarget: trigger.props.ref?.current ?? { focus() {} } });
-    form.render();
-    const camera = form.find(node => node.type?.name === "DemoFiveLiveCamera");
-    await camera.props.onCapture(new File(["image"], "photo.jpg", { type: "image/jpeg" }));
+    const camera = form.find(node => node.type === "input" && node.props.capture === "environment");
+    await camera.props.onChange({ currentTarget: { files: [new File(["image"], "photo.jpg", { type: "image/jpeg" })], value: "photo.jpg" } });
     await form.settle();
     assert.match(form.html(), /aria-selected="true"[^>]*aria-label="Other, [01] photos"/);
     assert.match(form.html(), /Photo saved\. Take another photo when ready\./);
@@ -193,21 +192,19 @@ test("restored photos open Step 2 and new captures save automatically in the cho
   } finally { form.close(); }
 });
 
-test("closing a retake camera restores focus and a shutter replaces the saved photo", async () => {
+test("native camera cancellation restores focus and a retake replaces the saved photo", async () => {
   const saved = draft(), form = await mountedForm(saved);
   try {
     await form.restore();
     const panel = form.find(node => node.type?.name === "DemoFivePhotoCategory");
     let focused = 0; const trigger = { focus() { focused++; } };
     panel.props.onRetake(saved.photos[0], trigger);
-    form.render();
-    let camera = form.find(node => node.type?.name === "DemoFiveLiveCamera");
-    camera.props.onClose(); await form.settle();
-    assert.equal(focused, 1);
+    const camera = form.find(node => node.type === "input" && node.props.capture === "environment");
+    camera.props.ref.current.listeners.get("cancel")(); await form.settle();
+    assert.equal(focused, 1); assert.match(form.html(), /No photo was added/);
     assert.equal(form.elements().some(node => node.type?.name === "DemoFivePhotoEditor"), false);
     panel.props.onRetake(saved.photos[0], trigger);
-    form.render(); camera = form.find(node => node.type?.name === "DemoFiveLiveCamera");
-    await camera.props.onCapture(new File(["image"], "retake.jpg", { type: "image/jpeg" }));
+    await camera.props.onChange({ currentTarget: { files: [new File(["image"], "retake.jpg", { type: "image/jpeg" })], value: "retake.jpg" } });
     await form.settle();
     const persisted = await form.loadSaved(saved.draftKey);
     assert.equal(persisted.photos.length, 10);

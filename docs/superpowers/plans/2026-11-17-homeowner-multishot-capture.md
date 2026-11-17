@@ -83,7 +83,7 @@ git commit -m "feat: add automatic homeowner photo metadata"
 
 **Interfaces:**
 - Consumes: `NEW_PHOTO_CATEGORIES` and `createAutomaticDraftPhoto(...)` from Task 1.
-- Produces: category selection followed by `Take Photos`; direct persistence after each image; `Take Another Photo`; multi-file Upload Photos; read-only image preview.
+- Produces: category selection followed by native `Take Photo`; direct persistence after approval; `Take Another Photo`; and multi-file Upload Photos.
 
 - [ ] **Step 1: Write failing form tests**
 
@@ -109,7 +109,7 @@ Remove homeowner-facing generated names and detail labels from thumbnails; keep 
 
 - [ ] **Step 6: Update capture copy and styles**
 
-Use the exact labels `Take Photos`, `Take Another Photo`, and `Upload Photos`; remove copy instructing homeowners to add details; style category selection and saved confirmation within the existing compact form.
+Use the exact labels `Take Photo`, `Take Another Photo`, and `Upload Photos`; remove copy instructing homeowners to add details; style category selection and saved confirmation within the existing compact form.
 
 - [ ] **Step 7: Run focused tests and verify GREEN**
 

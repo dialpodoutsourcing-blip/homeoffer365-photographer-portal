@@ -22,7 +22,7 @@ Make property-photo capture simple for homeowners: select a broad area, take rep
 
 ## Interaction
 
-The photo step shows the five category choices above the capture controls. After selecting one, the homeowner taps **Take Photos**. When the browser returns a captured image, the app prepares it, generates its internal metadata, saves it to the local draft, updates the category count, and shows a saved confirmation with **Take Another Photo**. The chosen category remains active. There is no editor between capture and save.
+The photo step shows the five category choices above the capture controls. After selecting one, the homeowner taps **Take Photo** to open the native phone camera. When the browser receives an approved image, the app prepares it, generates its internal metadata, saves it to the local draft, updates the category count, and shows **Take Another Photo**. The chosen category remains active. There is no editor between capture and save.
 
 **Upload Photos** accepts multiple existing images and processes them one at a time into the selected category. A failed image is reported without discarding images already saved from the same selection.
 

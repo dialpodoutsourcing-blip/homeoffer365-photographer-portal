@@ -7,7 +7,6 @@ import { PHOTO_CATEGORIES, PHOTO_MINIMUMS, createAutomaticDraftPhoto, countPhoto
 import { preparePhoto } from "@/lib/demo-five/prepare-photo";
 import { uploadPhotoDraft, uploadToSignedPhotoUrl, type UploadPhotoDraft, type UploadProgress } from "@/lib/demo-five/upload-photo-draft";
 import { DemoFivePhotoCategory } from "./demo-five-photo-category";
-import { DemoFiveLiveCamera } from "./demo-five-live-camera";
 import { photoLabel } from "./demo-five-photo-editor";
 import { DemoFiveDraftRestore } from "./demo-five-draft-restore";
 import { initialPhotoFormState, photoFormReducer, validateWizardStep, wizardStepForDraft, type WizardStep } from "@/lib/demo-five/photo-form-state";
@@ -50,10 +49,9 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   const [step, setStep] = useState<WizardStep>(1);
   const [activeCategory, setActiveCategory] = useState<NewPhotoCategory>("exterior");
   const [captureCategory, setCaptureCategory] = useState<NewPhotoCategory | "">("");
-  const [cameraOpen, setCameraOpen] = useState(false);
   const stepHeading = useRef<HTMLHeadingElement>(null);
   const previousStep = useRef<WizardStep>(step);
-  const picker = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null), picker = useRef<HTMLInputElement>(null);
   const retake = useRef<DraftPhoto | undefined>(undefined);
   const pendingCategory = useRef<PhotoCategory | "">("");
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -63,7 +61,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     previousStep.current = step;
   }, [step]);
   useEffect(() => {
-    const inputs = [picker.current];
+    const inputs = [camera.current, picker.current];
     const cancel = () => {
       retake.current = undefined;
       trigger.current?.focus();
@@ -76,18 +74,13 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   function openCamera(photo: DraftPhoto | undefined, button: HTMLButtonElement) {
     const category = photo?.category ?? captureCategory;
     if (!category) { setError("Choose a photo category first."); return; }
-    trigger.current = button; retake.current = photo; pendingCategory.current = category; setCameraOpen(true);
+    trigger.current = button; retake.current = photo; pendingCategory.current = category; camera.current?.click();
   }
   async function selected(event: ChangeEvent<HTMLInputElement>) {
     const files = [...(event.currentTarget.files ?? [])], existing = retake.current;
     event.currentTarget.value = ""; retake.current = undefined; trigger.current?.focus();
     if (files.length) await capture(files, pendingCategory.current, existing);
     else setNotice("No photo was added. Your saved photos are unchanged.");
-  }
-  async function liveCapture(file: File) {
-    const existing = retake.current;
-    if (!await capture([file], pendingCategory.current, existing)) throw new Error("The photo could not be saved. Try again.");
-    retake.current = undefined;
   }
 
   useEffect(() => {
@@ -278,9 +271,10 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
       </fieldset>
       {step === 2 && <>
         <p className="demo-five-orientation-guidance"><strong>Take all photos horizontally (landscape orientation).</strong><span>Choose an area, then take as many photos as you need. Each shot saves automatically.</span></p>
+        <input ref={camera} type="file" accept="image/*" capture="environment" hidden disabled={disabled} onChange={selected} />
         <input ref={picker} type="file" accept="image/*" multiple hidden disabled={disabled} onChange={selected} />
         <div className="demo-five-capture-choice"><label>Choose photo area<select value={captureCategory} disabled={disabled} onChange={event => { const category = event.target.value as NewPhotoCategory | ""; setCaptureCategory(category); if (category) setActiveCategory(category); }}><option value="">Select an area</option>{PHOTO_CATEGORIES.map(category => <option key={category} value={category}>{photoLabel(category)}</option>)}</select></label></div>
-        <div className="demo-five-capture-actions"><button type="button" disabled={disabled || !captureCategory} onClick={event => openCamera(undefined, event.currentTarget)}>{notice.startsWith("Photo saved") ? "Take Another Photo" : "Take Photos"}</button><button type="button" disabled={disabled || !captureCategory} onClick={event => { trigger.current = event.currentTarget; retake.current = undefined; pendingCategory.current = captureCategory; picker.current?.click(); }}>Upload Photos</button></div>
+        <div className="demo-five-capture-actions"><button type="button" disabled={disabled || !captureCategory} onClick={event => openCamera(undefined, event.currentTarget)}>{notice.startsWith("Photo saved") ? "Take Another Photo" : "Take Photo"}</button><button type="button" disabled={disabled || !captureCategory} onClick={event => { trigger.current = event.currentTarget; retake.current = undefined; pendingCategory.current = captureCategory; picker.current?.click(); }}>Upload Photos</button></div>
         <section className="demo-five-review-panel" aria-labelledby="demo-five-review-title">
           <div className="demo-five-review-heading"><div><span className="demo-five-review-kicker">Photo checklist</span><h4 id="demo-five-review-title">Review your photos</h4></div><p><strong>10 required</strong><span>4 Exterior · 4 Interior · 1 Mechanical · 1 Basement</span><small>Other is optional. N/A selections do not replace required photos.</small></p></div>
           <div className="demo-five-photo-tabs" role="tablist" aria-label="Photo categories">{PHOTO_CATEGORIES.map(category => <button key={category} type="button" role="tab" id={`demo-five-tab-${category}`} aria-controls={`demo-five-panel-${category}`} aria-selected={activeCategory === category} aria-label={`${photoLabel(category)}, ${counts[category]} photos`} tabIndex={activeCategory === category ? 0 : -1} onClick={() => setActiveCategory(category)} onKeyDown={event => tabKey(event, category)}><span className="demo-five-tab-label">{photoLabel(category)}</span><span className="demo-five-tab-count">{counts[category]}{PHOTO_MINIMUMS[category] > 0 ? `/${PHOTO_MINIMUMS[category]}` : ""}</span></button>)}</div>
@@ -295,7 +289,6 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
       {terminalFailure && <button type="button" disabled={busy || submitting} onClick={() => void restartExpired()}>Reset expired submission and keep photos</button>}
       <div className="demo-five-submit">{step > 1 && <button type="button" className="demo-five-back" disabled={busy || submitting} onClick={back}>Back</button>}{step === 2 && <><small id="demo-five-submission-requirements" role="status" aria-live="polite">{submissionRequirement}</small>{incompleteDetails && <button type="button" disabled={disabled} aria-describedby="demo-five-submission-requirements" onClick={() => { setStep(incompleteDetails.step); setError(""); setNotice(""); closeSuggestions(); }}>{`Complete ${stepTitles[incompleteDetails.step - 1]}`}</button>}</>}<button className="demo-five-primary" type="submit" aria-describedby={step === 2 ? "demo-five-submission-requirements" : undefined} disabled={!draft || busy || submitting || (step === 2 && (!online || !readyToSubmit || terminalFailure))}>{step < 2 ? "Next" : submitting ? "Submitting…" : locked ? "Retry submission" : "Submit All Photos"}</button></div>
     </form>
-    {cameraOpen && <DemoFiveLiveCamera onCapture={liveCapture} onClose={() => { setCameraOpen(false); retake.current = undefined; trigger.current?.focus(); }} />}
     {submitted && <SubmissionConfirmation onClose={() => { setSubmitted(false); requestAnimationFrame(() => nameInput.current?.focus()); }} />}
   </section>;
 }
