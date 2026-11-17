@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CAMERA_CONSTRAINTS, captureVideoFrame, stopMediaStream } from "../lib/demo-five/live-camera.ts";
+import { CAMERA_CONSTRAINTS, captureVideoFrame, initialCameraReviewState, cameraReviewReducer, stopMediaStream } from "../lib/demo-five/live-camera.ts";
 
 test("live camera prefers the rear camera without requesting audio", () => {
   assert.deepEqual(CAMERA_CONSTRAINTS, { audio: false, video: { facingMode: { ideal: "environment" } } });
@@ -26,4 +26,16 @@ test("closing the camera stops every media track", () => {
   const stopped = [];
   stopMediaStream({ getTracks: () => [{ stop: () => stopped.push(1) }, { stop: () => stopped.push(2) }] });
   assert.deepEqual(stopped, [1, 2]);
+});
+
+test("camera review state requires approval before a captured file can save", () => {
+  const file = new File(["photo"], "shot.jpg", { type: "image/jpeg" });
+  const reviewing = cameraReviewReducer(initialCameraReviewState, { type: "captured", file, previewUrl: "blob:shot" });
+  assert.deepEqual(reviewing, { phase: "reviewing", file, previewUrl: "blob:shot", error: "" });
+  assert.deepEqual(cameraReviewReducer(reviewing, { type: "retake" }), initialCameraReviewState);
+  const saving = cameraReviewReducer(reviewing, { type: "saveStarted" });
+  assert.equal(saving.phase, "saving"); assert.equal(saving.file, file);
+  const failed = cameraReviewReducer(saving, { type: "saveFailed", error: "Storage full" });
+  assert.equal(failed.phase, "reviewing"); assert.equal(failed.file, file); assert.equal(failed.error, "Storage full");
+  assert.deepEqual(cameraReviewReducer(saving, { type: "saveSucceeded" }), initialCameraReviewState);
 });
