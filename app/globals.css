@@ -1020,6 +1020,9 @@ p.upload-note { display: flex; align-items: flex-start; gap: 7px; font-size: 10p
 .demo-five-photo-form .demo-five-orientation-guidance { margin: 26px 0 18px; padding: 13px 0 13px 16px; border-left: 3px solid var(--form-accent); border-radius: 0; background: transparent; color: #173f5f; }
 .demo-five-photo-form .demo-five-orientation-guidance span { display: block; font-size: 13px; margin-top: 3px; }
 .demo-five-photo-form .demo-five-capture-actions { display: flex; flex-wrap: wrap; gap: 11px; margin-bottom: 38px; }
+.demo-five-photo-form .demo-five-capture-choice { margin: 16px 0 12px; }
+.demo-five-photo-form .demo-five-capture-choice label { display: grid; gap: 7px; font-weight: 750; }
+.demo-five-photo-form .demo-five-capture-choice select { min-height: 48px; border: 1px solid #cbd5e1; border-radius: 10px; background: white; padding: 10px 12px; font: inherit; }
 .demo-five-photo-form .demo-five-capture-actions button { flex: 1; min-height: 54px; }
 .demo-five-photo-form .demo-five-review-panel { min-width: 0; }
 .demo-five-photo-form .demo-five-review-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: end; margin-bottom: 20px; }

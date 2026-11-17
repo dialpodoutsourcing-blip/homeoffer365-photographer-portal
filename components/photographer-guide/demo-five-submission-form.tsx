@@ -3,11 +3,11 @@
 import { useEffect, useReducer, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import { applyAddressLocality, findAddressLocalities, formatAddressLocality, type AddressLocality } from "@/lib/address-suggestions";
 import { createIndexedDbPhotoDraftStore, createPhotoDraftKey, PhotoDraftConflictError, type PhotoDraftStore } from "@/lib/demo-five/photo-draft-store";
-import { PHOTO_CATEGORIES, PHOTO_MINIMUMS, countPhotosByCategory, validatePhotoMinimums, validateSubmissionManifest, type DraftPhoto, type HomeownerDetails, type PhotoCategory, type PhotoType } from "@/lib/demo-five/photo-workflow";
+import { PHOTO_CATEGORIES, PHOTO_MINIMUMS, createAutomaticDraftPhoto, countPhotosByCategory, validatePhotoMinimums, validateSubmissionManifest, type DraftPhoto, type HomeownerDetails, type NewPhotoCategory, type PhotoCategory, type PhotoType } from "@/lib/demo-five/photo-workflow";
 import { preparePhoto } from "@/lib/demo-five/prepare-photo";
 import { uploadPhotoDraft, uploadToSignedPhotoUrl, type UploadPhotoDraft, type UploadProgress } from "@/lib/demo-five/upload-photo-draft";
 import { DemoFivePhotoCategory } from "./demo-five-photo-category";
-import { DemoFivePhotoEditor, photoLabel } from "./demo-five-photo-editor";
+import { photoLabel } from "./demo-five-photo-editor";
 import { DemoFiveDraftRestore } from "./demo-five-draft-restore";
 import { initialPhotoFormState, photoFormReducer, validateWizardStep, wizardStepForDraft, type WizardStep } from "@/lib/demo-five/photo-form-state";
 import { SubmissionConfirmation } from "./submission-confirmation";
@@ -34,7 +34,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   const [savedDrafts, setSavedDrafts] = useState<UploadPhotoDraft[]>([]);
   const [unreadableDrafts, setUnreadableDrafts] = useState(0);
   const [attempt, dispatch] = useReducer(photoFormReducer, initialPhotoFormState);
-  const { error, busy, submitting, submitted, edit, progress, terminalFailure, editorRevision } = attempt;
+  const { error, busy, submitting, submitted, progress, terminalFailure } = attempt;
   const setError = (error: string) => dispatch({ type: "patch", value: { error } });
   const setBusy = (busy: boolean) => dispatch({ type: "patch", value: { busy } });
   const setSubmitting = (submitting: boolean) => dispatch({ type: "patch", value: { submitting } });
@@ -47,11 +47,13 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const nameInput = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<WizardStep>(1);
-  const [activeCategory, setActiveCategory] = useState<PhotoCategory>("exterior");
+  const [activeCategory, setActiveCategory] = useState<NewPhotoCategory>("exterior");
+  const [captureCategory, setCaptureCategory] = useState<NewPhotoCategory | "">("");
   const stepHeading = useRef<HTMLHeadingElement>(null);
   const previousStep = useRef<WizardStep>(step);
   const camera = useRef<HTMLInputElement>(null), picker = useRef<HTMLInputElement>(null);
   const retake = useRef<DraftPhoto | undefined>(undefined);
+  const pendingCategory = useRef<PhotoCategory | "">("");
   const trigger = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
@@ -70,12 +72,14 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   }, [step]);
 
   function openCamera(photo: DraftPhoto | undefined, button: HTMLButtonElement) {
-    trigger.current = button; retake.current = photo; camera.current?.click();
+    const category = photo?.category ?? captureCategory;
+    if (!category) { setError("Choose a photo category first."); return; }
+    trigger.current = button; retake.current = photo; pendingCategory.current = category; camera.current?.click();
   }
   async function selected(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0], existing = retake.current;
+    const files = [...(event.currentTarget.files ?? [])], existing = retake.current;
     event.currentTarget.value = ""; retake.current = undefined; trigger.current?.focus();
-    if (file) await capture(file, existing?.category ?? "", existing);
+    if (files.length) await capture(files, pendingCategory.current, existing);
     else setNotice("No photo was added. Your saved photos are unchanged.");
   }
 
@@ -128,26 +132,24 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     await persist(value);
     display(value); setError(""); setNotice("Photo checklist saved on this device.");
   }
-  async function capture(file: File, category: PhotoCategory | "", existing?: DraftPhoto) {
-    if (busy || submittingRef.current || current.current?.upload) return;
-    const focus = { returnFocus: document.activeElement as HTMLElement | null };
+  async function capture(files: File[], category: PhotoCategory | "", existing?: DraftPhoto) {
+    if (busy || submittingRef.current || current.current?.upload || !category) return;
     dispatch({ type: "captureStarted" }); setNotice("Preparing photo…");
     try {
-      const image = await preparePhoto(file);
-      dispatch({ type: "captureFinished", edit: { image, category, existing, capturedAt: new Date().toISOString(), ...focus } });
-      setNotice("");
+      for (const [index, file] of files.entries()) {
+        const image = await preparePhoto(file);
+        const sequence = (current.current?.photos.filter(photo => photo.category === category).length ?? 0) + 1;
+        const result = createAutomaticDraftPhoto(image, PHOTO_CATEGORIES.includes(category as NewPhotoCategory) ? category as NewPhotoCategory : "other", sequence, index === 0 ? existing : undefined);
+        if (!result.ok) throw new Error(result.error);
+        const previous = current.current;
+        if (!previous) return;
+        const exists = previous.photos.some(item => item.clientPhotoId === result.value.clientPhotoId);
+        await updatePhotos(exists ? previous.photos.map(item => item.clientPhotoId === result.value.clientPhotoId ? result.value : item) : [...previous.photos, result.value]);
+      }
+      if (PHOTO_CATEGORIES.includes(category as NewPhotoCategory)) { setActiveCategory(category as NewPhotoCategory); setCaptureCategory(category as NewPhotoCategory); }
+      setNotice(`${files.length === 1 ? "Photo" : `${files.length} photos`} saved. Take another photo when ready.`);
     } catch (error) { setError(error instanceof Error ? error.message : "Could not open the camera image. Enable camera access or choose an existing image."); }
     finally { setBusy(false); }
-  }
-  async function savePhoto(photo: DraftPhoto) {
-    const previous = current.current;
-    if (!previous) return;
-    const exists = previous.photos.some(item => item.clientPhotoId === photo.clientPhotoId);
-    try {
-      await updatePhotos(exists ? previous.photos.map(item => item.clientPhotoId === photo.clientPhotoId ? photo : item) : [...previous.photos, photo]);
-      setActiveCategory(photo.category);
-      dispatch({ type: "closeEditor" });
-    } catch (error) { throw new Error(storageMessage(error)); }
   }
   async function removePhoto(photo: DraftPhoto) {
     if (!current.current || busy) return;
@@ -240,7 +242,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     : minimums.ok ? "All photo minimums met. Review your details, then submit." : minimums.error;
   const stepTitles = ["Homeowner Information", "Property Photos"];
   function back() { setStep((step - 1) as WizardStep); setError(""); setNotice(""); closeSuggestions(); }
-  function tabKey(event: KeyboardEvent<HTMLButtonElement>, category: PhotoCategory) {
+  function tabKey(event: KeyboardEvent<HTMLButtonElement>, category: NewPhotoCategory) {
     const index = PHOTO_CATEGORIES.indexOf(category);
     const next = event.key === "Home" ? 0 : event.key === "End" ? PHOTO_CATEGORIES.length - 1 : event.key === "ArrowRight" ? (index + 1) % PHOTO_CATEGORIES.length : event.key === "ArrowLeft" ? (index + PHOTO_CATEGORIES.length - 1) % PHOTO_CATEGORIES.length : -1;
     if (next < 0) return;
@@ -267,14 +269,15 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
         </div>
       </fieldset>
       {step === 2 && <>
-        <p className="demo-five-orientation-guidance"><strong>Take all photos horizontally (landscape orientation).</strong><span>Choose the category and add photo details after capture.</span></p>
+        <p className="demo-five-orientation-guidance"><strong>Take all photos horizontally (landscape orientation).</strong><span>Choose an area, then take as many photos as you need. Each shot saves automatically.</span></p>
         <input ref={camera} type="file" accept="image/*" capture="environment" hidden disabled={disabled} onChange={selected} />
-        <input ref={picker} type="file" accept="image/*" hidden disabled={disabled} onChange={selected} />
-        <div className="demo-five-capture-actions"><button type="button" disabled={disabled} onClick={event => openCamera(undefined, event.currentTarget)}>Take Photo</button><button type="button" disabled={disabled} onClick={event => { trigger.current = event.currentTarget; retake.current = undefined; picker.current?.click(); }}>Upload Image</button></div>
+        <input ref={picker} type="file" accept="image/*" multiple hidden disabled={disabled} onChange={selected} />
+        <div className="demo-five-capture-choice"><label>Choose photo area<select value={captureCategory} disabled={disabled} onChange={event => { const category = event.target.value as NewPhotoCategory | ""; setCaptureCategory(category); if (category) setActiveCategory(category); }}><option value="">Select an area</option>{PHOTO_CATEGORIES.map(category => <option key={category} value={category}>{photoLabel(category)}</option>)}</select></label></div>
+        <div className="demo-five-capture-actions"><button type="button" disabled={disabled || !captureCategory} onClick={event => openCamera(undefined, event.currentTarget)}>{notice.startsWith("Photo saved") ? "Take Another Photo" : "Take Photos"}</button><button type="button" disabled={disabled || !captureCategory} onClick={event => { trigger.current = event.currentTarget; retake.current = undefined; pendingCategory.current = captureCategory; picker.current?.click(); }}>Upload Photos</button></div>
         <section className="demo-five-review-panel" aria-labelledby="demo-five-review-title">
-          <div className="demo-five-review-heading"><div><span className="demo-five-review-kicker">Photo checklist</span><h4 id="demo-five-review-title">Review your photos</h4></div><p><strong>10 required</strong><span>4 Exterior · 4 Interior · 1 Mechanical · 1 Condition</span><small>Other is optional. N/A selections do not replace required photos.</small></p></div>
+          <div className="demo-five-review-heading"><div><span className="demo-five-review-kicker">Photo checklist</span><h4 id="demo-five-review-title">Review your photos</h4></div><p><strong>10 required</strong><span>4 Exterior · 4 Interior · 1 Mechanical · 1 Basement</span><small>Other is optional. N/A selections do not replace required photos.</small></p></div>
           <div className="demo-five-photo-tabs" role="tablist" aria-label="Photo categories">{PHOTO_CATEGORIES.map(category => <button key={category} type="button" role="tab" id={`demo-five-tab-${category}`} aria-controls={`demo-five-panel-${category}`} aria-selected={activeCategory === category} aria-label={`${photoLabel(category)}, ${counts[category]} photos`} tabIndex={activeCategory === category ? 0 : -1} onClick={() => setActiveCategory(category)} onKeyDown={event => tabKey(event, category)}><span className="demo-five-tab-label">{photoLabel(category)}</span><span className="demo-five-tab-count">{counts[category]}{PHOTO_MINIMUMS[category] > 0 ? `/${PHOTO_MINIMUMS[category]}` : ""}</span></button>)}</div>
-          <div className="demo-five-categories"><DemoFivePhotoCategory category={activeCategory} photos={draft?.photos.filter(photo => photo.category === activeCategory) ?? []} notApplicable={draft?.notApplicable ?? []} disabled={disabled} onRetake={(photo, button) => openCamera(photo, button)} onView={photo => dispatch({ type: "openEditor", edit: { image: photo, category: photo.category, existing: photo, capturedAt: photo.capturedAt, viewOnly: true, returnFocus: document.activeElement as HTMLElement | null } })} onRemove={photo => void removePhoto(photo)} onNotApplicable={(category, type, checked) => void notApplicable(category, type, checked)} /></div>
+          <div className="demo-five-categories"><DemoFivePhotoCategory category={activeCategory} photos={draft?.photos.filter(photo => photo.category === activeCategory) ?? []} notApplicable={draft?.notApplicable ?? []} disabled={disabled} onRetake={(photo, button) => openCamera(photo, button)} onRemove={photo => void removePhoto(photo)} onNotApplicable={(category, type, checked) => void notApplicable(category, type, checked)} /></div>
         </section>
       </>}
       {locked && <p>This visit is saved for submission. Retry to finish uploading the remaining photos.</p>}
@@ -285,7 +288,6 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
       {terminalFailure && <button type="button" disabled={busy || submitting} onClick={() => void restartExpired()}>Reset expired submission and keep photos</button>}
       <div className="demo-five-submit">{step > 1 && <button type="button" className="demo-five-back" disabled={busy || submitting} onClick={back}>Back</button>}{step === 2 && <><small id="demo-five-submission-requirements" role="status" aria-live="polite">{submissionRequirement}</small>{incompleteDetails && <button type="button" disabled={disabled} aria-describedby="demo-five-submission-requirements" onClick={() => { setStep(incompleteDetails.step); setError(""); setNotice(""); closeSuggestions(); }}>{`Complete ${stepTitles[incompleteDetails.step - 1]}`}</button>}</>}<button className="demo-five-primary" type="submit" aria-describedby={step === 2 ? "demo-five-submission-requirements" : undefined} disabled={!draft || busy || submitting || (step === 2 && (!online || !readyToSubmit || terminalFailure))}>{step < 2 ? "Next" : submitting ? "Submitting…" : locked ? "Retry submission" : "Submit All Photos"}</button></div>
     </form>
-    {edit && <DemoFivePhotoEditor key={editorRevision} edit={edit} onSave={savePhoto} onClose={() => dispatch({ type: "closeEditor" })} />}
     {submitted && <SubmissionConfirmation onClose={() => { setSubmitted(false); requestAnimationFrame(() => nameInput.current?.focus()); }} />}
   </section>;
 }

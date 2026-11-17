@@ -16,9 +16,9 @@ async function subject() {
   return import(moduleUrl.href);
 }
 function draft() {
-  const photos = ["exterior", "exterior", "exterior", "exterior", "interior", "interior", "interior", "interior", "mechanical", "condition"].map((category, index) => ({
+  const photos = ["exterior", "exterior", "exterior", "exterior", "interior", "interior", "interior", "interior", "mechanical", "basement"].map((category, index) => ({
     clientPhotoId: `photo-${index}`, photoName: `View ${index}`, category,
-    photoType: "other", conditionStatus: "good_condition", description: "", capturedAt: "2026-11-13T12:00:00.000Z",
+    photoType: category === "basement" ? "basement" : "other", conditionStatus: "good_condition", description: "", capturedAt: "2026-11-13T12:00:00.000Z",
     width: 100, height: 80, mimeType: "image/webp", byteSize: 5, blob: new Blob(["image"], { type: "image/webp" }),
   }));
   return { version: 1, browserDraftId: "browser-1", draftKey: createPhotoDraftKey("123 Main Street", "browser-1"),
@@ -146,13 +146,16 @@ test("wizard uses two homeowner steps with no payment controls and preserves con
     assert.match(html, /name="propertyAddress"/); assert.match(html, /Take all photos horizontally \(landscape orientation\)/);
     assert.equal((html.match(/type="file"/g) ?? []).length, 2);
     assert.equal((html.match(/capture="environment"/g) ?? []).length, 1);
-    assert.match(html, />Take Photo<\/button>/); assert.match(html, />Upload Image<\/button>/);
+    assert.match(html, />Take Photos<\/button>/); assert.match(html, />Upload Photos<\/button>/);
+    const upload = form.find(node => node.type === "input" && node.props.multiple === true);
+    assert.equal(upload.props.capture, undefined);
+    assert.doesNotMatch(html, /Photo name|Photo type|Condition status|Description/);
     form.find(node => node.type === "button" && node.props.children === "Back").props.onClick(); form.render();
     assert.match(form.html(), /value="Ada"/); assert.match(form.html(), /value="ada@example.com"/);
   } finally { form.close(); }
 });
 
-test("restored photos open Step 2 with five counted tabs, and only Interior exposes N/A", async () => {
+test("restored photos open Step 2 and new captures save automatically in the chosen area", async () => {
   const saved = draft();
   const original = saved.photos[0];
   const originalMetadata = { ...original };
@@ -161,7 +164,7 @@ test("restored photos open Step 2 with five counted tabs, and only Interior expo
   try {
     await form.restore(); const html = form.html();
     assert.match(html, /Step 2 of 2/);
-    for (const [label, count] of [["Exterior", 4], ["Interior", 4], ["Mechanical", 1], ["Condition", 1], ["Other", 0]]) {
+    for (const [label, count] of [["Exterior", 4], ["Interior", 4], ["Mechanical", 1], ["Basement", 1], ["Other", 0]]) {
       assert.match(html, new RegExp(`role="tab"[^>]*aria-label="${label}, ${count} photos"`));
     }
     assert.doesNotMatch(html, /Mark feature N\/A/);
@@ -170,27 +173,20 @@ test("restored photos open Step 2 with five counted tabs, and only Interior expo
     assert.match(form.html(), /Basement N\/A/); assert.match(form.html(), /Attic N\/A/); assert.match(form.html(), /Garage N\/A/);
     tab("Other").props.onClick(); form.render();
     assert.match(form.html(), /No Other photos yet/); assert.doesNotMatch(form.html(), /Mark feature N\/A/);
-    tab("Interior").props.onClick(); form.render();
-    const photo = { ...draft().photos[0], clientPhotoId: "photo-new", category: "other", photoName: "Garden detail" };
-    // The editor's saved classification determines the newly active tab.
+    const area = form.find(node => node.type === "select" && node.props.value === "");
+    area.props.onChange({ target: { value: "other" } }); form.render();
     const camera = form.find(node => node.type === "input" && node.props.capture === "environment");
-    const trigger = form.find(node => node.type === "button" && node.props.children === "Take Photo");
+    const trigger = form.find(node => node.type === "button" && node.props.children === "Take Photos");
     trigger.props.onClick({ currentTarget: trigger.props.ref?.current ?? { focus() {} } });
     await camera.props.onChange({ currentTarget: { files: [new File(["image"], "photo.jpg", { type: "image/jpeg" })], value: "photo.jpg" } });
     await form.settle();
-    let editor = form.find(node => node.type?.name === "DemoFivePhotoEditor");
-    assert.equal(editor.props.edit.category, ""); assert.equal(editor.props.edit.existing, undefined);
-    await editor.props.onSave(photo); await form.settle();
-    assert.match(form.html(), /aria-selected="true"[^>]*aria-label="Other, 1 photos"/);
-    assert.match(form.html(), /Garden detail/);
-    const displayedTotal = [...form.html().matchAll(/aria-label="(?:Exterior|Interior|Mechanical|Condition|Other), (\d+) photos"/g)]
-      .reduce((total, match) => total + Number(match[1]), 0);
-    assert.equal(displayedTotal, 11);
+    assert.match(form.html(), /aria-selected="true"[^>]*aria-label="Other, [01] photos"/);
+    assert.match(form.html(), /Photo saved\. Take another photo when ready\./);
+    assert.match(form.html(), />Take Another Photo<\/button>/);
+    assert.equal(form.elements().some(node => node.type?.name === "DemoFivePhotoEditor"), false);
     assert.equal(saved.photos.length, 10);
-    const persisted = await form.loadSaved(saved.draftKey);
-    assert.equal(persisted.photos.length, 11);
-    assert.deepEqual(persisted.photos[0], originalMetadata);
-    assert.deepEqual(await persisted.photos[0].blob.arrayBuffer(), originalBlobBytes);
+    assert.deepEqual(saved.photos[0], originalMetadata);
+    assert.deepEqual(await saved.photos[0].blob.arrayBuffer(), originalBlobBytes);
   } finally { form.close(); }
 });
 
@@ -204,12 +200,13 @@ test("shared retake cancellation restores focus and keeps the saved photo", asyn
     const camera = form.find(node => node.type === "input" && node.props.capture === "environment");
     camera.props.ref.current.listeners.get("cancel")(); await form.settle();
     assert.equal(focused, 1); assert.match(form.html(), /No photo was added/);
-    assert.match(form.html(), /View 0/); assert.equal(form.elements().some(node => node.type?.name === "DemoFivePhotoEditor"), false);
+    assert.equal(form.elements().some(node => node.type?.name === "DemoFivePhotoEditor"), false);
     panel.props.onRetake(saved.photos[0], trigger);
     await camera.props.onChange({ currentTarget: { files: [new File(["image"], "retake.jpg", { type: "image/jpeg" })], value: "retake.jpg" } });
     await form.settle();
-    const editor = form.find(node => node.type?.name === "DemoFivePhotoEditor");
-    assert.equal(editor.props.edit.category, "exterior"); assert.equal(editor.props.edit.existing.clientPhotoId, "photo-0");
+    const persisted = await form.loadSaved(saved.draftKey);
+    assert.equal(persisted.photos.length, 10);
+    assert.equal(persisted.photos[0].clientPhotoId, "photo-0");
   } finally { form.close(); }
 });
 
@@ -235,7 +232,7 @@ test("restored incomplete homeowner details explain disabled submission and reco
         await form.next();
         assert.match(form.html(), /Step 2 of 2/);
         assert.equal(submit().props.disabled, false, "correcting details should unblock the valid saved photo set");
-        assert.match(form.html(), /View 0/); assert.match(form.html(), /value="123 Main Street"/);
+        assert.match(form.html(), /value="123 Main Street"/);
         assert.doesNotMatch(form.html(), /Complete Homeowner Information/);
       } finally { form.close(); }
     }
@@ -507,7 +504,7 @@ test("signed transport encodes path and token and rejects missing or insecure or
   assert.equal(calls.length, 1);
 });
 
-test("Demo 5 exposes its scoped camera, editor, persistence, and accessible form contracts", async () => {
+test("Demo 5 exposes automatic category capture, persistence, and accessible form contracts", async () => {
   const read = name => readFile(new URL(`../components/photographer-guide/${name}.tsx`, import.meta.url), "utf8").catch(() => "");
   const [form, category, editor] = await Promise.all([read("demo-five-submission-form"), read("demo-five-photo-category"), read("demo-five-photo-editor")]);
   assert.ok(form, "Demo Five form must exist");
@@ -515,17 +512,15 @@ test("Demo 5 exposes its scoped camera, editor, persistence, and accessible form
   for (const name of ["homeownerName", "email", "phone", "propertyAddress"]) assert.ok(form.includes(`name="${name}"`));
   assert.doesNotMatch(form, /photographerName|paymentMethod|paymentUrl|Payment Information/);
   for (const helper of ["findAddressLocalities", "applyAddressLocality", "formatAddressLocality", "createIndexedDbPhotoDraftStore", "validatePhotoMinimums", "SubmissionConfirmation"]) assert.ok(form.includes(helper));
-  assert.match(form, /4 Exterior.*4 Interior.*1 Mechanical.*1 Condition/);
+  assert.match(form, /4 Exterior.*4 Interior.*1 Mechanical.*1 Basement/);
   assert.doesNotMatch(category, /demo-five-type-hint|getPhotoTypeOptions/);
   assert.match(category, /OPTIONAL_FEATURES\[category\]\.length\s*>\s*0/);
   assert.match(category, /<details className="demo-five-na-disclosure">/);
   assert.match(category, /<summary>Mark feature N\/A<\/summary>/);
-  for (const action of ["View", "Retake", "Remove", "N\/A"]) assert.match(category, new RegExp(action));
-  assert.match(editor, /role="dialog"/); assert.match(editor, /aria-modal="true"/);
-  assert.match(editor, /Photo name/); assert.match(editor, /Photo type/); assert.match(editor, /Condition status/); assert.match(editor, /Description/);
-  assert.match(editor, /\.focus\(/); assert.match(editor, /validateDraftPhoto/);
-  assert.match(form, /returnFocus: document\.activeElement/);
-  assert.match(editor, /edit\.returnFocus/);
+  for (const action of ["Retake", "Remove", "N\/A"]) assert.match(category, new RegExp(action));
+  assert.match(form, /createAutomaticDraftPhoto/);
+  assert.match(form, /multiple/);
+  assert.doesNotMatch(form, /DemoFivePhotoEditor|Photo name|Condition status/);
 });
 
 test("restore options remain visible alongside a preserved-corruption warning", async () => {
@@ -563,7 +558,7 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
   });
   try {
     const { DemoFivePhotoCategory } = await import("../components/photographer-guide/demo-five-photo-category.tsx");
-    const { DemoFivePhotoEditor, photoLabel } = await import("../components/photographer-guide/demo-five-photo-editor.tsx");
+    const { photoLabel } = await import("../components/photographer-guide/demo-five-photo-editor.tsx");
     const { DemoFiveSubmissionForm } = await import("../components/photographer-guide/demo-five-submission-form.tsx");
     const formHtml = renderToStaticMarkup(createElement(DemoFiveSubmissionForm, { storageOrigin: "https://storage.example.com" }));
     assert.match(formHtml, /Step 1 of 2/);
@@ -576,35 +571,6 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
       "Hallway and room layout", "Kitchen under-sink plumbing", "Basement window and egress",
       "Furnace and ductwork", "HVAC service connections",
     ]);
-    const inaccessiblePhoto = { ...draft().photos[4], photoName: "Blocked basement access", conditionStatus: "not_accessible" };
-    const editorHtml = renderToStaticMarkup(createElement(DemoFivePhotoEditor, {
-      edit: { image: inaccessiblePhoto, category: "interior", existing: inaccessiblePhoto, capturedAt: inaccessiblePhoto.capturedAt, viewOnly: false },
-      async onSave() {}, onClose() {},
-    }));
-    for (const label of ["Good Condition", "Satisfactory", "Needs Maintenance", "Damaged", "Non-Functional / Unusable", "Not Accessible"]) assert.match(editorHtml, new RegExp(`>${label}<`));
-    assert.match(editorHtml, /The area or item could not be reached or its condition could not be confirmed\./);
-    assert.match(editorHtml, /Explain why the area or item was not accessible in Description\./);
-    const renderEditor = edit => renderToStaticMarkup(createElement(DemoFivePhotoEditor, { edit, async onSave() {}, onClose() {} }));
-    const newEdit = { image: draft().photos[0], category: "", capturedAt: draft().photos[0].capturedAt };
-    const unclassified = renderEditor(newEdit);
-    const categorySelect = unclassified.match(/<select name="category"[^>]*>(.*?)<\/select>/s)?.[1];
-    assert.ok(categorySelect, "new captures must show category selection after capture");
-    assert.ok(unclassified.indexOf('name="category"') < unclassified.indexOf('name="photoType"'));
-    assert.match(unclassified, /<select name="category" required=""/);
-    assert.match(categorySelect, /<option value="" selected="">Choose a category<\/option>/);
-    for (const label of ["Exterior", "Interior", "Mechanical", "Condition", "Other"]) assert.match(categorySelect, new RegExp(`>${label}<`));
-    assert.equal((categorySelect.match(/<option\b/g) ?? []).length, 6);
-    assert.equal((unclassified.match(/<select name="photoType"[^>]*>(.*?)<\/select>/s)[1].match(/<option\b/g) ?? []).length, 1);
-    for (const [category, expectedType, unexpectedType] of [["exterior", "front", "kitchen"], ["interior", "kitchen", "front"], ["mechanical", "water_heater", "front"], ["condition", "general_condition", "front"], ["other", "other", "front"]]) {
-      const html = renderEditor({ ...newEdit, category });
-      const types = html.match(/<select name="photoType"[^>]*>(.*?)<\/select>/s)[1];
-      assert.match(types, new RegExp(`value="${expectedType}"`));
-      assert.doesNotMatch(types, new RegExp(`value="${unexpectedType}"`));
-    }
-    const existing = { ...draft().photos[4], photoType: "kitchen" };
-    const retake = renderEditor({ ...newEdit, category: "", existing });
-    assert.match(retake, /<option value="interior" selected="">Interior<\/option>/);
-    assert.match(retake, /<option value="kitchen" selected="">Kitchen<\/option>/);
     const props = { category: "exterior", photos: draft().photos.slice(0, 2), notApplicable: [], disabled: false,
       onRetake() {}, onView() {}, onRemove() {}, onNotApplicable() {} };
     const html = renderToStaticMarkup(createElement(DemoFivePhotoCategory, props));
@@ -621,12 +587,12 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
     const mechanical = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, category: "mechanical", photos: [], notApplicable: [] }));
     assert.doesNotMatch(mechanical, /Mark feature N\/A/);
     assert.doesNotMatch(html, /type="file"|Take Photo|Upload Image/);
-    assert.match(html, /aria-label="View View 0"/);
+    assert.doesNotMatch(html, />View 0<|Good Condition|Photo name/);
     const complete = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, photos: draft().photos.slice(0, 4) }));
     assert.match(complete, /4\/4 photos — Complete/);
     const removed = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, photos: [] }));
     assert.match(removed, /0\/4 photos — Needed/);
     const disabled = renderToStaticMarkup(createElement(DemoFivePhotoCategory, { ...props, disabled: true }));
-    assert.ok([...disabled.matchAll(/<button\b[^>]*>/g)].every(([button]) => button.includes('disabled=""')), "all category actions, including View, must honor the busy/submission guard");
+    assert.ok([...disabled.matchAll(/<button\b[^>]*>/g)].every(([button]) => button.includes('disabled=""')), "all category actions must honor the busy/submission guard");
   } finally { hook.deregister(); }
 });
