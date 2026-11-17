@@ -5,9 +5,27 @@ import { Camera, Handshake, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useRef } from "react";
 
-export function SubmissionConfirmation({ onClose }: { onClose: () => void }) {
+type SubmissionConfirmationAudience = "photographer" | "homeowner";
+
+export function getSubmissionConfirmationCopy(audience: SubmissionConfirmationAudience) {
+  if (audience === "homeowner") return {
+    title: "Photos Successfully Submitted!",
+    appreciation: "Thank you for taking the time to photograph your property. We appreciate your help.",
+    review: "Our team will review your photos and add the approved images to your property listing.",
+    followUp: "We’ll contact you if we need anything else.",
+  };
+  return {
+    title: "Photos & Videos Successfully Submitted!",
+    appreciation: "Thank you for your time, effort, and professional photography services. We truly appreciate your work.",
+    review: "Our team will review your photos and videos, and your payment will be processed promptly once everything is approved.",
+    followUp: "We’re excited to work with you on more projects in the future!",
+  };
+}
+
+export function SubmissionConfirmation({ onClose, audience = "photographer" }: { onClose: () => void; audience?: SubmissionConfirmationAudience }) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const overlayRef = useRef<HTMLElement>(null);
+  const copy = getSubmissionConfirmationCopy(audience);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -46,19 +64,26 @@ export function SubmissionConfirmation({ onClose }: { onClose: () => void }) {
         <span className="submission-success-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path pathLength="1" d="m5 12 4.2 4.2L19 6.8" /></svg></span>
       </div>
 
-      <h2 id="submission-confirmation-title">Photos &amp; Videos<br />Successfully Submitted!</h2>
+      <h2 id="submission-confirmation-title">{audience === "homeowner" ? copy.title : <>Photos &amp; Videos<br />Successfully Submitted!</>}</h2>
 
       <div className="submission-thank-you-card">
         <Image src="/images/team/ashley-sellers.jpg" width={244} height={276} alt="Ashley Sellers" priority />
         <div><strong>Thank You!</strong><p>Your submission has been received successfully.</p></div>
       </div>
 
-      <p className="submission-appreciation"><span className="submission-appreciation-line">Thank you for your time, effort, and professional</span><span className="submission-appreciation-line">photography services. We truly appreciate your work.</span></p>
-
-      <div className="submission-next-steps">
-        <div><Camera aria-hidden="true" /><p>Our team will review your photos and videos, and <strong>your payment will be processed promptly</strong> once everything is approved.</p></div>
-        <div><Handshake aria-hidden="true" /><p>We&apos;re excited to work with you on more projects in the future!</p></div>
-      </div>
+      {audience === "homeowner" ? <>
+        <p className="submission-appreciation">{copy.appreciation}</p>
+        <div className="submission-next-steps">
+          <div><Camera aria-hidden="true" /><p>{copy.review}</p></div>
+          <div><Handshake aria-hidden="true" /><p>{copy.followUp}</p></div>
+        </div>
+      </> : <>
+        <p className="submission-appreciation"><span className="submission-appreciation-line">Thank you for your time, effort, and professional</span><span className="submission-appreciation-line">photography services. We truly appreciate your work.</span></p>
+        <div className="submission-next-steps">
+          <div><Camera aria-hidden="true" /><p>Our team will review your photos and videos, and <strong>your payment will be processed promptly</strong> once everything is approved.</p></div>
+          <div><Handshake aria-hidden="true" /><p>We&apos;re excited to work with you on more projects in the future!</p></div>
+        </div>
+      </>}
 
       <footer className="submission-confirmation-footer">
         <Image className="submission-confirmation-brand-logo" src="/images/brand/home-offer-365-logo.png" width={768} height={296} alt="Home Offer 365" />

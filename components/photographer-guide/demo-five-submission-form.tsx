@@ -289,6 +289,6 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
       {terminalFailure && <button type="button" disabled={busy || submitting} onClick={() => void restartExpired()}>Reset expired submission and keep photos</button>}
       <div className="demo-five-submit">{step > 1 && <button type="button" className="demo-five-back" disabled={busy || submitting} onClick={back}>Back</button>}{step === 2 && <><small id="demo-five-submission-requirements" role="status" aria-live="polite">{submissionRequirement}</small>{incompleteDetails && <button type="button" disabled={disabled} aria-describedby="demo-five-submission-requirements" onClick={() => { setStep(incompleteDetails.step); setError(""); setNotice(""); closeSuggestions(); }}>{`Complete ${stepTitles[incompleteDetails.step - 1]}`}</button>}</>}<button className="demo-five-primary" type="submit" aria-describedby={step === 2 ? "demo-five-submission-requirements" : undefined} disabled={!draft || busy || submitting || (step === 2 && (!online || !readyToSubmit || terminalFailure))}>{step < 2 ? "Next" : submitting ? "Submitting…" : locked ? "Retry submission" : "Submit All Photos"}</button></div>
     </form>
-    {submitted && <SubmissionConfirmation onClose={() => { setSubmitted(false); requestAnimationFrame(() => nameInput.current?.focus()); }} />}
+    {submitted && <SubmissionConfirmation audience="homeowner" onClose={() => { setSubmitted(false); requestAnimationFrame(() => nameInput.current?.focus()); }} />}
   </section>;
 }

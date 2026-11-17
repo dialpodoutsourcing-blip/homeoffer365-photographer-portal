@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+import { registerHooks } from "node:module";
+import ts from "typescript";
 
 const confirmationPath = new URL("../components/photographer-guide/submission-confirmation.tsx", import.meta.url);
 const formPath = new URL("../components/photographer-guide/submission-form.tsx", import.meta.url);
@@ -41,6 +44,28 @@ test("the confirmation contains the approved Ashley, next-step content, and offi
   assert.match(confirmation, /\/images\/brand\/home-offer-365-logo\.png/);
   assert.match(confirmation, /alt="Home Offer 365"/);
   assert.doesNotMatch(confirmation, /submission-confirmation-house-mark|\bHouse\b/);
+});
+
+test("homeowners receive listing-review confirmation copy without photographer payment language", async () => {
+  const hook = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === "next/image") return { url: new URL("../node_modules/next/image.js", import.meta.url).href, shortCircuit: true };
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url.endsWith(".tsx")) return { format: "module", shortCircuit: true, source: ts.transpileModule(readFileSync(new URL(url), "utf8"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.ESNext } }).outputText };
+      return nextLoad(url, context);
+    },
+  });
+  try {
+    const confirmation = await import(confirmationPath.href);
+    assert.equal(typeof confirmation.getSubmissionConfirmationCopy, "function");
+    const copy = confirmation.getSubmissionConfirmationCopy("homeowner");
+    assert.equal(copy.title, "Photos Successfully Submitted!");
+    assert.match(copy.review, /team will review your photos/i);
+    assert.match(copy.review, /property listing/i);
+    assert.doesNotMatch(JSON.stringify(copy), /payment|professional photography services|more projects/i);
+  } finally { hook.deregister(); }
 });
 
 test("the appreciation stays on two lines and next-step icons align to the top", async () => {
