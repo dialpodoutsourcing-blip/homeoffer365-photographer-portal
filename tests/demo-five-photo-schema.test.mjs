@@ -10,13 +10,15 @@ const sampleTypesMigrationUrl = new URL("../supabase/migrations/202611130002_dem
 const conditionStatusesMigrationUrl = new URL("../supabase/migrations/202611130003_demo_five_condition_statuses.sql", import.meta.url);
 const otherCategoryMigrationUrl = new URL("../supabase/migrations/202611130004_demo_five_other_category.sql", import.meta.url);
 const homeownerContactsMigrationUrl = new URL("../supabase/migrations/202611170001_homeowner_contacts_optional_payment.sql", import.meta.url);
+const basementMigrationUrl = new URL("../supabase/migrations/202611170002_homeowner_basement_photos.sql", import.meta.url);
 let db;
 let migration;
 let sampleTypesMigration;
 let conditionStatusesMigration;
 let otherCategoryMigration;
 let homeownerContactsMigration;
-const legacyTypes = { exterior: ["sides", "roof", "yard", "driveway", "outbuildings", "damage"], interior: ["bedroom", "under_sink", "damage"], mechanical: ["hvac", "electrical_panel", "plumbing"], condition: [], other: [] };
+let basementMigration;
+const legacyTypes = { exterior: ["sides", "roof", "yard", "driveway", "outbuildings", "damage"], interior: ["bedroom", "under_sink", "damage"], mechanical: ["hvac", "electrical_panel", "plumbing"], basement: [], condition: [], other: [] };
 const bootstrap = `create role anon; create role authenticated; create role service_role;
   create schema storage;
   create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);`;
@@ -27,6 +29,7 @@ before(async () => {
   conditionStatusesMigration = await readFile(conditionStatusesMigrationUrl, "utf8");
   otherCategoryMigration = await readFile(otherCategoryMigrationUrl, "utf8");
   homeownerContactsMigration = await readFile(homeownerContactsMigrationUrl, "utf8");
+  basementMigration = await readFile(basementMigrationUrl, "utf8");
   db = new PGlite();
   await db.exec(bootstrap);
   await db.exec(migration);
@@ -34,6 +37,7 @@ before(async () => {
   await db.exec(conditionStatusesMigration);
   await db.exec(otherCategoryMigration);
   await db.exec(homeownerContactsMigration);
+  await db.exec(basementMigration);
 });
 after(async () => { await db?.close(); });
 
@@ -52,9 +56,9 @@ async function session(photos = validPhotos(), options = {}) {
 }
 
 function validPhotos() {
-  return ["exterior", "exterior", "exterior", "exterior", "interior", "interior", "interior", "interior", "mechanical", "condition"].map((category, index) => ({
+  return ["exterior", "exterior", "exterior", "exterior", "interior", "interior", "interior", "interior", "mechanical", "basement"].map((category, index) => ({
     clientPhotoId: `photo-${index}`, objectPath: `session/photo-${index}.webp`, photoName: `Photo ${index}`,
-    category, photoType: { exterior: "front", interior: "kitchen", mechanical: "hvac", condition: "general_condition" }[category],
+    category, photoType: { exterior: "front", interior: "kitchen", mechanical: "hvac", basement: "basement" }[category],
     conditionStatus: "good_condition", description: "", capturedAt: "2026-11-13T12:00:00.000Z",
     width: 1200, height: 900, mimeType: "image/webp", byteSize: 1000,
   }));
@@ -153,7 +157,7 @@ test("finalize persists optional Other photos and returns them on an identical r
   [{ photo_category: "other", photo_type: "other", condition_status: "not_accessible", photo: "session/other-1.webp" }]);
 });
 
-for (const category of ["exterior", "interior", "mechanical", "condition"]) {
+for (const category of ["exterior", "interior", "mechanical", "basement"]) {
   test(`Other does not satisfy the database ${category} minimum`, async () => {
     const photos = validPhotos();
     const photo = photos.find(photo => photo.category === category);

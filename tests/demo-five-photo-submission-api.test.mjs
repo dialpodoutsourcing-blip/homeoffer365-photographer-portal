@@ -14,9 +14,9 @@ function manifest() {
     photographer: { name: "Ada", email: " ADA@Example.com ", phone: "123" },
     propertyAddress: "123 Example Street",
     notApplicable: [{ category: "interior", photoType: "attic" }, { category: "interior", photoType: "basement" }],
-    photos: ["exterior", "exterior", "exterior", "exterior", "interior", "interior", "interior", "interior", "mechanical", "condition"].map((category, i) => ({
+    photos: ["exterior", "exterior", "exterior", "exterior", "interior", "interior", "interior", "interior", "mechanical", "basement"].map((category, i) => ({
       clientPhotoId: `photo-${i}`, photoName: `Photo ${i}`, category,
-      photoType: { exterior: "front", interior: "kitchen", mechanical: "hvac", condition: "general_condition" }[category],
+      photoType: { exterior: "front", interior: "kitchen", mechanical: "hvac", basement: "basement" }[category],
       conditionStatus: "good_condition", description: "", capturedAt: "2026-11-13T12:00:00Z",
       width: 1200, height: 900, mimeType: "image/webp", byteSize: 1000,
     })),
@@ -90,7 +90,7 @@ test("prepare and finalize preserve an optional Other photo alongside all requir
   assert.deepEqual(f.sessions.get(result.sessionId).preparedManifest.photos.find(photo => photo.clientPhotoId === "other-1"), { ...input.photos[10], capturedAt: "2026-11-13T12:00:00.000Z" });
 });
 
-for (const category of ["exterior", "interior", "mechanical", "condition"]) {
+for (const category of ["exterior", "interior", "mechanical", "basement"]) {
   test(`Other photos cannot replace the ${category} minimum at either API boundary`, async () => {
     const input = manifestWithOther();
     const photo = input.photos.find(photo => photo.category === category);
