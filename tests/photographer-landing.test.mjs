@@ -44,27 +44,34 @@ test("the site root loads demo 4 first", async () => {
   assert.doesNotMatch(rootPage, /PhotographerLanding/);
 });
 
-test("homeowners succeeds demo 5 while preserving its independent camera form", async () => {
-  const [demoFour, demoFiveLegacy, homeowners, demoFourLanding, homeownersLanding, demoFourSamples, demoFiveSamples] = await Promise.all([
+test("homeowners presents a compact homeowner hero and goes directly to its camera form", async () => {
+  const [demoFour, demoFiveLegacy, homeowners, demoFourLanding, homeownersLanding, styles] = await Promise.all([
     readFile(demoFourPath, "utf8"),
     readFile(demoFiveLegacyPath, "utf8"),
     readFile(homeownersPath, "utf8"),
     readFile(demoFourLandingPath, "utf8"),
     readFile(homeownersLandingPath, "utf8"),
-    readFile(demoFourSamplesPath, "utf8"),
-    readFile(demoFiveSamplesPath, "utf8"),
+    readFile(stylesPath, "utf8"),
   ]);
 
   assert.match(homeowners, /HomeownersPage/);
   assert.match(homeowners, /Homeowners/);
   assert.doesNotMatch(homeowners, /Photographer Demo 5/);
   assert.match(demoFiveLegacy, /permanentRedirect\("\/photographers\/homeowners"\)/);
-  const normalize = (source) => source.replaceAll("\r\n", "\n").trimEnd();
   assert.match(homeownersLanding, /<DemoFiveSubmissionForm/);
-  assert.doesNotMatch(homeownersLanding, /<SubmissionForm|Google Drive/);
+  assert.match(homeownersLanding, /HOMEOWNER PHOTO PORTAL/);
+  assert.match(homeownersLanding, /Share Your Property Photos/);
+  assert.match(homeownersLanding, /Upload clear photos of your home so our team can review the property and keep your sale moving\./);
+  assert.match(homeownersLanding, /exterior-front-left-curb\.webp/);
+  assert.match(homeownersLanding, /className="homeowners-hero"/);
+  assert.doesNotMatch(homeownersLanding, /PHOTOGRAPHER PORTAL|Photographer(?:&apos;|')s Info|demo-four-team-strip|VENDOR FEEDBACK|QUICK REFERENCE|DemoFiveSamples|demo-four-reviews|demo-four-samples/);
+  assert.match(styles, /\.homeowners-hero\s*\{[^}]*min-height:\s*240px/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.homeowners-hero\s*\{[^}]*min-height:\s*210px/);
   assert.match(demoFourLanding, /<SubmissionForm \/>/);
+  assert.match(demoFourLanding, /demo-four-team-strip/);
+  assert.match(demoFourLanding, /VENDOR FEEDBACK/);
+  assert.match(demoFourLanding, /QUICK REFERENCE/);
   assert.match(await readFile(submissionFormPath, "utf8"), /Google Drive Link/);
-  assert.equal(normalize(demoFiveSamples.replaceAll("DemoFive", "DemoFour")), normalize(demoFourSamples));
   assert.doesNotMatch(demoFour, /HomeownersPage|Photographer Demo 5/);
 });
 
