@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   PHOTO_CATEGORIES,
+  NEW_PHOTO_CATEGORIES,
   PHOTO_TYPES,
   OPTIONAL_FEATURES,
   PHOTO_MINIMUMS,
@@ -11,6 +12,7 @@ import {
   countPhotosByCategory,
   validatePhotoMinimums,
   validateSubmissionManifest,
+  createAutomaticDraftPhoto,
 } from "../lib/demo-five/photo-workflow.ts";
 
 function photo(overrides = {}) {
@@ -49,7 +51,7 @@ function manifest(overrides = {}) {
       photo({ clientPhotoId: "i3", category: "interior", photoType: "bedroom" }),
       photo({ clientPhotoId: "i4", category: "interior", photoType: "bathroom" }),
       photo({ clientPhotoId: "m1", category: "mechanical", photoType: "hvac" }),
-      photo({ clientPhotoId: "c1", category: "condition", photoType: "general_condition" }),
+      photo({ clientPhotoId: "b1", category: "basement", photoType: "basement" }),
     ],
     notApplicable: [],
     ...overrides,
@@ -63,11 +65,13 @@ function rejects(result) {
 }
 
 test("category choices expose the approved stable photo-type values", () => {
-  assert.deepEqual(PHOTO_CATEGORIES, ["exterior", "interior", "mechanical", "condition", "other"]);
+  assert.deepEqual(NEW_PHOTO_CATEGORIES, ["exterior", "interior", "mechanical", "basement", "other"]);
+  assert.deepEqual(PHOTO_CATEGORIES, NEW_PHOTO_CATEGORIES);
   const expected = {
     exterior: ["front", "front_and_driveway", "side_yard", "front_and_side_angle", "property_boundary_and_fence", "rear", "exterior_ac_condenser", "exterior_electrical_service", "front_left_curb_view", "right_side_elevation", "backyard_and_rear_elevation", "roof_soffit_and_gutters", "other"],
     interior: ["living_room", "dining_area", "hallway_room_layout", "kitchen", "kitchen_under_sink_plumbing", "primary_bedroom", "second_bedroom", "bathroom", "bathroom_vanity_plumbing", "laundry_room", "entry_foyer", "living_room_reverse_view", "dining_room_reverse_view", "kitchen_wide_view", "kitchen_appliance_wall", "kitchen_cabinets_and_counters", "primary_bedroom_reverse_view", "primary_bedroom_closet", "second_bedroom_reverse_view", "bathroom_tub_and_shower", "hallway_linen_storage", "mudroom_and_back_entry", "basement_stair_access", "laundry_reverse_view", "basement", "basement_overview", "basement_stair_landing", "foundation_walls", "floor_drain_condition", "basement_window_and_egress", "basement_storage_area", "support_beam_and_columns", "basement_exterior_exit", "attic", "garage", "other"],
     mechanical: ["furnace_and_ductwork", "modern_furnace", "water_heater", "water_softener", "well_pump_system", "breaker_panel", "main_water_shutoff", "sump_pump", "hvac_service_connections", "plumbing_distribution", "other"],
+    basement: ["basement"],
     condition: ["general_condition", "damage", "repair_needed", "other"],
     other: ["other"],
   };
@@ -85,6 +89,20 @@ test("category choices expose the approved stable photo-type values", () => {
     { category: "interior", photoType: "bedroom" }, { category: "interior", photoType: "under_sink" },
     { category: "mechanical", photoType: "hvac" }, { category: "mechanical", photoType: "electrical_panel" },
   ]) assert.equal(validateDraftPhoto(photo(legacy)).ok, true, `legacy ${legacy.category}:${legacy.photoType}`);
+});
+
+test("automatic homeowner photos need no naming or classification input", () => {
+  const image = { blob: new Blob(["image"], { type: "image/webp" }), width: 1200, height: 900, mimeType: "image/webp", byteSize: 5 };
+  const result = createAutomaticDraftPhoto(image, "basement", 2, undefined, "2026-11-13T10:00:00.000Z");
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.value, { ...image, clientPhotoId: result.value.clientPhotoId, photoName: "Basement photo 2", category: "basement", photoType: "basement", conditionStatus: "good_condition", description: "", capturedAt: "2026-11-13T10:00:00.000Z" });
+  assert.match(result.value.clientPhotoId, /^[0-9a-f-]{36}$/i);
+  const legacy = photo({ category: "condition", photoType: "general_condition" });
+  assert.equal(validateDraftPhoto(legacy).ok, true);
+  const retake = createAutomaticDraftPhoto(image, "exterior", 9, legacy, "2026-11-13T11:00:00.000Z");
+  assert.equal(retake.ok, true);
+  assert.equal(retake.value.clientPhotoId, legacy.clientPhotoId);
+  assert.equal(retake.value.category, "condition");
 });
 
 test("draft validation normalizes text, preserves blobs, and accepts every inspector condition status", () => {
@@ -154,12 +172,12 @@ test("JSON manifest validation accepts photo metadata without blobs and omits bi
 });
 
 test("minimums count actual photos and allow multiple photos of the same type", () => {
-  assert.deepEqual(PHOTO_MINIMUMS, { exterior: 4, interior: 4, mechanical: 1, condition: 1, other: 0 });
-  assert.deepEqual(countPhotosByCategory([]), { exterior: 0, interior: 0, mechanical: 0, condition: 0, other: 0 });
+  assert.deepEqual(PHOTO_MINIMUMS, { exterior: 4, interior: 4, mechanical: 1, basement: 1, other: 0, condition: 0 });
+  assert.deepEqual(countPhotosByCategory([]), { exterior: 0, interior: 0, mechanical: 0, basement: 0, other: 0, condition: 0 });
   const photos = manifest().photos;
-  assert.deepEqual(countPhotosByCategory(photos), { exterior: 4, interior: 4, mechanical: 1, condition: 1, other: 0 });
+  assert.deepEqual(countPhotosByCategory(photos), { exterior: 4, interior: 4, mechanical: 1, basement: 1, other: 0, condition: 0 });
   assert.equal(validatePhotoMinimums(photos).ok, true);
-  for (const clientPhotoId of ["e1", "i1", "m1", "c1"]) {
+  for (const clientPhotoId of ["e1", "i1", "m1", "b1"]) {
     rejects(validatePhotoMinimums(photos.filter((item) => item.clientPhotoId !== clientPhotoId)));
   }
 });
@@ -167,7 +185,7 @@ test("minimums count actual photos and allow multiple photos of the same type", 
 test("N/A accepts only the approved feature/category pairs without lowering minimums", () => {
   assert.deepEqual(OPTIONAL_FEATURES, {
     exterior: [], interior: ["basement", "attic", "garage"],
-    mechanical: [], condition: [], other: [],
+    mechanical: [], basement: [], condition: [], other: [],
   });
   const notApplicable = [
     { category: "interior", photoType: "basement" },
@@ -196,7 +214,7 @@ test("Other accepts only its own type and never replaces required photos or perm
     rejects(validateDraftPhoto({ ...other, photoType }));
   }
   const photos = [...manifest().photos, other];
-  assert.deepEqual(countPhotosByCategory(photos), { exterior: 4, interior: 4, mechanical: 1, condition: 1, other: 1 });
+  assert.deepEqual(countPhotosByCategory(photos), { exterior: 4, interior: 4, mechanical: 1, basement: 1, other: 1, condition: 0 });
   assert.equal(validateSubmissionManifest(manifest({ photos })).ok, true);
   rejects(validatePhotoMinimums(photos.filter(item => item.clientPhotoId !== "e1")));
   rejects(validateSubmissionManifest(manifest({ notApplicable: [{ category: "other", photoType: "other" }] })));

@@ -1,9 +1,13 @@
-export const PHOTO_CATEGORIES = ["exterior", "interior", "mechanical", "condition", "other"] as const;
+import type { PreparedPhoto } from "./prepare-photo.ts";
+
+export const NEW_PHOTO_CATEGORIES = ["exterior", "interior", "mechanical", "basement", "other"] as const;
+export const PHOTO_CATEGORIES = NEW_PHOTO_CATEGORIES;
 
 export const PHOTO_TYPES = {
   exterior: ["front", "front_and_driveway", "side_yard", "front_and_side_angle", "property_boundary_and_fence", "rear", "exterior_ac_condenser", "exterior_electrical_service", "front_left_curb_view", "right_side_elevation", "backyard_and_rear_elevation", "roof_soffit_and_gutters", "other"],
   interior: ["living_room", "dining_area", "hallway_room_layout", "kitchen", "kitchen_under_sink_plumbing", "primary_bedroom", "second_bedroom", "bathroom", "bathroom_vanity_plumbing", "laundry_room", "entry_foyer", "living_room_reverse_view", "dining_room_reverse_view", "kitchen_wide_view", "kitchen_appliance_wall", "kitchen_cabinets_and_counters", "primary_bedroom_reverse_view", "primary_bedroom_closet", "second_bedroom_reverse_view", "bathroom_tub_and_shower", "hallway_linen_storage", "mudroom_and_back_entry", "basement_stair_access", "laundry_reverse_view", "basement", "basement_overview", "basement_stair_landing", "foundation_walls", "floor_drain_condition", "basement_window_and_egress", "basement_storage_area", "support_beam_and_columns", "basement_exterior_exit", "attic", "garage", "other"],
   mechanical: ["furnace_and_ductwork", "modern_furnace", "water_heater", "water_softener", "well_pump_system", "breaker_panel", "main_water_shutoff", "sump_pump", "hvac_service_connections", "plumbing_distribution", "other"],
+  basement: ["basement"],
   condition: ["general_condition", "damage", "repair_needed", "other"],
   other: ["other"],
 } as const;
@@ -12,6 +16,7 @@ const LEGACY_PHOTO_TYPES = {
   exterior: ["sides", "roof", "yard", "driveway", "outbuildings", "damage"],
   interior: ["bedroom", "under_sink", "damage"],
   mechanical: ["hvac", "electrical_panel", "plumbing"],
+  basement: [],
   condition: [],
   other: [],
 } as const;
@@ -20,11 +25,12 @@ export const OPTIONAL_FEATURES = {
   exterior: [],
   interior: ["basement", "attic", "garage"],
   mechanical: [],
+  basement: [],
   condition: [],
   other: [],
 } as const;
 
-export const PHOTO_MINIMUMS = { exterior: 4, interior: 4, mechanical: 1, condition: 1, other: 0 } as const;
+export const PHOTO_MINIMUMS = { exterior: 4, interior: 4, mechanical: 1, basement: 1, other: 0, condition: 0 } as const;
 export const CONDITION_STATUSES = ["good_condition", "satisfactory", "needs_maintenance", "damage", "non_functional", "not_accessible"] as const;
 export const CONDITION_STATUS_DETAILS = {
   good_condition: { label: "Good Condition", description: "Functional with no visible concerns." },
@@ -35,7 +41,8 @@ export const CONDITION_STATUS_DETAILS = {
   not_accessible: { label: "Not Accessible", description: "The area or item could not be reached or its condition could not be confirmed." },
 } as const satisfies Record<(typeof CONDITION_STATUSES)[number], { label: string; description: string }>;
 
-export type PhotoCategory = (typeof PHOTO_CATEGORIES)[number];
+export type NewPhotoCategory = (typeof NEW_PHOTO_CATEGORIES)[number];
+export type PhotoCategory = keyof typeof PHOTO_TYPES;
 type SelectablePhotoType = (typeof PHOTO_TYPES)[PhotoCategory][number];
 export type PhotoType = SelectablePhotoType | (typeof LEGACY_PHOTO_TYPES)[PhotoCategory][number];
 export type ConditionStatus = (typeof CONDITION_STATUSES)[number];
@@ -226,8 +233,19 @@ export function validateDraftPhoto(input: unknown): ValidationResult<DraftPhoto>
   return { ok: true, value: { ...metadata.value, blob: input.blob } };
 }
 
+const AUTOMATIC_PHOTO_TYPES: Record<NewPhotoCategory, PhotoType> = {
+  exterior: "other", interior: "other", mechanical: "other", basement: "basement", other: "other",
+};
+
+export function createAutomaticDraftPhoto(image: PreparedPhoto, category: NewPhotoCategory, sequence: number,
+  existing?: DraftPhoto, capturedAt = new Date().toISOString()): ValidationResult<DraftPhoto> {
+  if (existing) return validateDraftPhoto({ ...existing, ...image, capturedAt });
+  return validateDraftPhoto({ ...image, clientPhotoId: crypto.randomUUID(), photoName: `${getPhotoTypeLabel(category)} photo ${sequence}`,
+    category, photoType: AUTOMATIC_PHOTO_TYPES[category], conditionStatus: "good_condition", description: "", capturedAt });
+}
+
 export function countPhotosByCategory(photos: readonly Pick<PhotoMetadata, "category">[]): Record<PhotoCategory, number> {
-  const counts = { exterior: 0, interior: 0, mechanical: 0, condition: 0, other: 0 };
+  const counts: Record<PhotoCategory, number> = { exterior: 0, interior: 0, mechanical: 0, basement: 0, other: 0, condition: 0 };
   for (const photo of photos) {
     if (category(photo.category)) counts[photo.category] += 1;
   }
@@ -237,7 +255,7 @@ export function countPhotosByCategory(photos: readonly Pick<PhotoMetadata, "cate
 export function validatePhotoMinimums(photos: readonly Pick<PhotoMetadata, "category">[]): ValidationResult<Record<PhotoCategory, number>> {
   const counts = countPhotosByCategory(photos);
   if (PHOTO_CATEGORIES.some((item) => counts[item] < PHOTO_MINIMUMS[item])) {
-    return { ok: false, error: "Add at least 4 Exterior, 4 Interior, 1 Mechanical, and 1 Condition photos." };
+    return { ok: false, error: "Add at least 4 Exterior, 4 Interior, 1 Mechanical, and 1 Basement photos." };
   }
   return { ok: true, value: counts };
 }
