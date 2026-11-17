@@ -21,28 +21,16 @@ export function photoClassificationReducer(state: PhotoClassification, action: C
   };
 }
 
-export type WizardStep = 1 | 2 | 3;
+export type WizardStep = 1 | 2;
 type WizardDraft = Pick<PhotoDraft, "photographer" | "propertyAddress" | "photos">;
 
 export function validateWizardStep(step: WizardStep, draft: WizardDraft): ValidationResult<WizardStep> {
   const validText = (value: string, limit: number) => value.trim().length > 0 && value.trim().length <= limit;
-  const { name, email, phone, paymentMethod, paymentUrl } = draft.photographer;
+  const { name, email, phone } = draft.photographer;
   if (step === 1) {
     const normalizedEmail = email.trim().toLowerCase();
     if (!validText(name, 200) || !validText(normalizedEmail, 320) || !validText(phone, 50) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return { ok: false, error: "Enter your name, a valid email, and phone number within their text limits." };
-    }
-  } else if (step === 2) {
-    if (!validText(paymentMethod, 100) || !validText(paymentUrl, 2048)) {
-      return { ok: false, error: "Enter a payment method and payment URL within their text limits." };
-    }
-    try {
-      const url = new URL(paymentUrl.trim());
-      if (url.protocol !== "https:" || url.username || url.password) {
-        return { ok: false, error: "Payment URL must use HTTPS without embedded credentials." };
-      }
-    } catch {
-      return { ok: false, error: "Enter a valid HTTPS payment URL." };
     }
   } else if (!validText(draft.propertyAddress, 500)) {
     return { ok: false, error: "Enter the property address within 500 characters." };
@@ -51,9 +39,9 @@ export function validateWizardStep(step: WizardStep, draft: WizardDraft): Valida
 }
 
 export function wizardStepForDraft(draft: WizardDraft): WizardStep {
-  if (draft.propertyAddress.trim() || draft.photos.length > 0) return 3;
+  if (draft.propertyAddress.trim() || draft.photos.length > 0) return 2;
   if (!validateWizardStep(1, draft).ok) return 1;
-  return validateWizardStep(2, draft).ok ? 3 : 2;
+  return 2;
 }
 export type PhotoFormState = {
   busy: boolean; submitting: boolean; submitted: boolean;

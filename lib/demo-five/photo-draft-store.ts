@@ -4,7 +4,7 @@ import {
   validateSubmissionManifest,
   type DraftPhoto,
   type NotApplicableSelection,
-  type PhotographerDetails,
+  type HomeownerDetails,
 } from "./photo-workflow.ts";
 
 export type UploadEntry = { clientPhotoId: string; objectPath: string; alreadyUploaded: boolean; signedToken: string | null };
@@ -19,7 +19,7 @@ export type PhotoDraft = {
   draftKey: string;
   browserDraftId: string;
   propertyAddress: string;
-  photographer: PhotographerDetails;
+  photographer: HomeownerDetails;
   photos: DraftPhoto[];
   notApplicable: NotApplicableSelection[];
   updatedAt: string;
@@ -73,7 +73,7 @@ function assertPhotoDraft(value: unknown): asserts value is PhotoDraft {
     return corrupt();
   }
   // A draft may have incomplete contact fields and fewer than the submission minimums.
-  for (const field of ["name", "email", "phone", "paymentMethod", "paymentUrl"]) {
+  for (const field of ["name", "email", "phone"]) {
     if (typeof value.photographer[field] !== "string") corrupt();
   }
   if (value.photos.length > 100) corrupt();

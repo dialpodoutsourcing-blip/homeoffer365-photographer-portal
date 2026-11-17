@@ -22,7 +22,7 @@ function draft() {
     width: 100, height: 80, mimeType: "image/webp", byteSize: 5, blob: new Blob(["image"], { type: "image/webp" }),
   }));
   return { version: 1, browserDraftId: "browser-1", draftKey: createPhotoDraftKey("123 Main Street", "browser-1"),
-    propertyAddress: "123 Main Street", photographer: { name: "Ada", email: "ada@example.com", phone: "555-555-5555", paymentMethod: "Invoice", paymentUrl: "https://example.com/pay" },
+    propertyAddress: "123 Main Street", photographer: { name: "Ada", email: "ada@example.com", phone: "555-555-5555" },
     photos, notApplicable: [], updatedAt: "2026-11-13T12:00:00.000Z" };
 }
 function server(d, { finalizeFails = false, alreadyUploaded = [] } = {}) {
@@ -130,37 +130,29 @@ async function mountedForm(saved) {
   return api;
 }
 
-test("wizard validates each visible step and preserves contact and payment values on Back", async () => {
+test("wizard uses two homeowner steps with no payment controls and preserves contact on Back", async () => {
   const form = await mountedForm();
   try {
     let html = form.html();
-    assert.match(html, /Step 1 of 3/);
-    for (const name of ["photographerName", "email", "phone"]) assert.match(html, new RegExp(`name="${name}"`));
+    assert.match(html, /Step 1 of 2/);
+    assert.match(html, /Homeowner(?:&apos;|&#x27;|')s Name/);
+    for (const name of ["homeownerName", "email", "phone"]) assert.match(html, new RegExp(`name="${name}"`));
     assert.doesNotMatch(html, /name="paymentMethod"|name="paymentUrl"|name="propertyAddress"|type="file"/);
     assert.match(html, />Next<\/button>/);
-    await form.next(); assert.match(form.html(), /role="alert"/); assert.match(form.html(), /Step 1 of 3/);
-    form.field("photographerName", "Ada"); form.field("email", "ada@example.com"); form.field("phone", "555-555-5555");
-    html = await form.next(); assert.match(html, /Step 2 of 3/);
-    assert.match(html, /<select[^>]*name="paymentMethod"[^>]*required=""/); assert.match(html, /name="paymentUrl"/);
-    for (const option of ["ACH / Bank Transfer", "Zelle", "Venmo", "PayPal", "Cash App", "Check", "Other"])
-      assert.match(html, new RegExp(`<option value="${option.replace("/", "\\/")}">${option.replace("/", "\\/")}</option>`));
-    assert.doesNotMatch(html, /name="photographerName"|name="email"|name="phone"|name="propertyAddress"|type="file"/);
-    assert.match(html, />Back<\/button>/); assert.match(html, />Next<\/button>/);
-    await form.next(); assert.match(form.html(), /Step 2 of 3/); assert.match(form.html(), /role="alert"/);
-    form.field("paymentMethod", "Invoice"); form.field("paymentUrl", "https://example.com/pay");
-    html = await form.next(); assert.match(html, /Step 3 of 3/);
+    await form.next(); assert.match(form.html(), /role="alert"/); assert.match(form.html(), /Step 1 of 2/);
+    form.field("homeownerName", "Ada"); form.field("email", "ada@example.com"); form.field("phone", "555-555-5555");
+    html = await form.next(); assert.match(html, /Step 2 of 2/);
+    assert.doesNotMatch(html, /paymentMethod|paymentUrl|Payment Information/);
     assert.match(html, /name="propertyAddress"/); assert.match(html, /Take all photos horizontally \(landscape orientation\)/);
     assert.equal((html.match(/type="file"/g) ?? []).length, 2);
     assert.equal((html.match(/capture="environment"/g) ?? []).length, 1);
     assert.match(html, />Take Photo<\/button>/); assert.match(html, />Upload Image<\/button>/);
     form.find(node => node.type === "button" && node.props.children === "Back").props.onClick(); form.render();
-    assert.match(form.html(), /value="Invoice"/);
-    form.find(node => node.type === "button" && node.props.children === "Back").props.onClick(); form.render();
     assert.match(form.html(), /value="Ada"/); assert.match(form.html(), /value="ada@example.com"/);
   } finally { form.close(); }
 });
 
-test("restored photos open Step 3 with five counted tabs, and only Interior exposes N/A", async () => {
+test("restored photos open Step 2 with five counted tabs, and only Interior exposes N/A", async () => {
   const saved = draft();
   const original = saved.photos[0];
   const originalMetadata = { ...original };
@@ -168,7 +160,7 @@ test("restored photos open Step 3 with five counted tabs, and only Interior expo
   const form = await mountedForm(saved);
   try {
     await form.restore(); const html = form.html();
-    assert.match(html, /Step 3 of 3/);
+    assert.match(html, /Step 2 of 2/);
     for (const [label, count] of [["Exterior", 4], ["Interior", 4], ["Mechanical", 1], ["Condition", 1], ["Other", 0]]) {
       assert.match(html, new RegExp(`role="tab"[^>]*aria-label="${label}, ${count} photos"`));
     }
@@ -221,37 +213,30 @@ test("shared retake cancellation restores focus and keeps the saved photo", asyn
   } finally { form.close(); }
 });
 
-test("restored incomplete details explain disabled submission and recover through the required step", async () => {
+test("restored incomplete homeowner details explain disabled submission and recover through Step 1", async () => {
   const onlineDescriptor = Object.getOwnPropertyDescriptor(navigator, "onLine");
   Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
   try {
-    for (const missing of ["contact-and-payment", "payment"]) {
+    for (const missing of ["email", "phone"]) {
       const saved = draft();
-      saved.photographer.paymentUrl = "";
-      if (missing === "contact-and-payment") saved.photographer.email = "";
+      saved.photographer[missing] = "";
       const form = await mountedForm(saved);
       try {
         await form.restore();
-        assert.match(form.html(), /Step 3 of 3/);
+        assert.match(form.html(), /Step 2 of 2/);
         const submit = () => form.find(node => node.type === "button" && node.props.type === "submit");
         assert.equal(submit().props.disabled, true, "incomplete details must retain submission gating");
-        assert.match(form.html(), missing === "contact-and-payment" ? /Enter your name, a valid email, and phone number/ : /Enter a payment method and payment URL/);
+        assert.match(form.html(), /Enter your name, a valid email, and phone number/);
         assert.doesNotMatch(form.html(), /All photo minimums met\. Review your details, then submit\./);
-        const label = missing === "contact-and-payment" ? "Complete User Information" : "Complete Payment Information";
-        form.find(node => node.type === "button" && node.props.children === label).props.onClick();
+        form.find(node => node.type === "button" && node.props.children === "Complete Homeowner Information").props.onClick();
         form.render();
-        if (missing === "contact-and-payment") {
-          assert.match(form.html(), /Step 1 of 3/);
-          form.field("email", "ada@example.com");
-          await form.next();
-        }
-        assert.match(form.html(), /Step 2 of 3/);
-        form.field("paymentUrl", "https://example.com/pay");
+        assert.match(form.html(), /Step 1 of 2/);
+        form.field(missing, missing === "email" ? "ada@example.com" : "555-555-5555");
         await form.next();
-        assert.match(form.html(), /Step 3 of 3/);
+        assert.match(form.html(), /Step 2 of 2/);
         assert.equal(submit().props.disabled, false, "correcting details should unblock the valid saved photo set");
         assert.match(form.html(), /View 0/); assert.match(form.html(), /value="123 Main Street"/);
-        assert.doesNotMatch(form.html(), /Complete User Information|Complete Payment Information/);
+        assert.doesNotMatch(form.html(), /Complete Homeowner Information/);
       } finally { form.close(); }
     }
   } finally {
@@ -338,7 +323,6 @@ test("wizard validates contact fields independently with existing text and email
   const { validateWizardStep } = await formState();
   assert.equal(typeof validateWizardStep, "function");
   const d = { ...draft(), propertyAddress: "", photos: [] };
-  d.photographer = { ...d.photographer, paymentMethod: "", paymentUrl: "" };
   assert.equal(validateWizardStep(1, d).ok, true);
   for (const [field, boundary] of [
     ["name", "a".repeat(200)], ["email", `${"a".repeat(308)}@example.com`], ["phone", "1".repeat(50)],
@@ -351,40 +335,25 @@ test("wizard validates contact fields independently with existing text and email
   }
 });
 
-test("wizard validates only payment fields in Step 2 using HTTPS without credentials", async () => {
-  const { validateWizardStep } = await formState();
-  assert.equal(typeof validateWizardStep, "function");
-  const d = draft(); d.photographer = { ...d.photographer, name: "", email: "", phone: "" };
-  assert.equal(validateWizardStep(2, { ...d, propertyAddress: "", photos: [] }).ok, true);
-  for (const [field, boundary] of [["paymentMethod", "a".repeat(100)], ["paymentUrl", `https://example.com/${"a".repeat(2028)}`]]) {
-    assert.equal(validateWizardStep(2, { ...d, photographer: { ...d.photographer, [field]: boundary } }).ok, true);
-    for (const value of [" ", `${boundary}a`]) assert.equal(validateWizardStep(2, { ...d, photographer: { ...d.photographer, [field]: value } }).ok, false);
-  }
-  for (const paymentUrl of ["http://example.com", "javascript:alert(1)", "https://", "https://user:secret@example.com", "/pay"]) {
-    assert.equal(validateWizardStep(2, { ...d, photographer: { ...d.photographer, paymentUrl } }).ok, false);
-  }
-});
-
-test("wizard Step 3 requires an address within its existing limit", async () => {
+test("wizard Step 2 requires an address within its existing limit", async () => {
   const { validateWizardStep } = await formState();
   assert.equal(typeof validateWizardStep, "function");
   const d = draft();
-  assert.equal(validateWizardStep(3, { ...d, propertyAddress: "a".repeat(500) }).ok, true);
-  for (const propertyAddress of ["", " ", "a".repeat(501)]) assert.equal(validateWizardStep(3, { ...d, propertyAddress }).ok, false);
+  assert.equal(validateWizardStep(2, { ...d, propertyAddress: "a".repeat(500) }).ok, true);
+  for (const propertyAddress of ["", " ", "a".repeat(501)]) assert.equal(validateWizardStep(2, { ...d, propertyAddress }).ok, false);
 });
 
 test("draft restoration prioritizes property work then the earliest incomplete wizard step", async () => {
   const { wizardStepForDraft } = await formState();
   assert.equal(typeof wizardStepForDraft, "function");
   const d = { ...draft(), propertyAddress: "", photos: [] };
-  const empty = { name: "", email: "", phone: "", paymentMethod: "", paymentUrl: "" };
+  const empty = { name: "", email: "", phone: "" };
   assert.equal(wizardStepForDraft({ ...d, photographer: empty }), 1);
   assert.equal(wizardStepForDraft({ ...d, photographer: { ...d.photographer, email: "invalid" } }), 1);
-  assert.equal(wizardStepForDraft({ ...d, photographer: { ...d.photographer, paymentUrl: "" } }), 2);
-  assert.equal(wizardStepForDraft(d), 3);
+  assert.equal(wizardStepForDraft(d), 2);
   assert.equal(wizardStepForDraft({ ...d, propertyAddress: " ", photographer: empty }), 1);
-  assert.equal(wizardStepForDraft({ ...d, propertyAddress: "123 Main Street", photographer: empty }), 3);
-  assert.equal(wizardStepForDraft({ ...d, photos: draft().photos.slice(0, 1), photographer: empty }), 3);
+  assert.equal(wizardStepForDraft({ ...d, propertyAddress: "123 Main Street", photographer: empty }), 2);
+  assert.equal(wizardStepForDraft({ ...d, photos: draft().photos.slice(0, 1), photographer: empty }), 2);
 });
 
 test("editor category changes clear incompatible photo types and preserve shared Other type", async () => {
@@ -543,7 +512,8 @@ test("Demo 5 exposes its scoped camera, editor, persistence, and accessible form
   const [form, category, editor] = await Promise.all([read("demo-five-submission-form"), read("demo-five-photo-category"), read("demo-five-photo-editor")]);
   assert.ok(form, "Demo Five form must exist");
   assert.doesNotMatch(form, /Google Drive|driveLink/);
-  for (const name of ["photographerName", "email", "phone", "paymentMethod", "paymentUrl", "propertyAddress"]) assert.ok(form.includes(`name="${name}"`));
+  for (const name of ["homeownerName", "email", "phone", "propertyAddress"]) assert.ok(form.includes(`name="${name}"`));
+  assert.doesNotMatch(form, /photographerName|paymentMethod|paymentUrl|Payment Information/);
   for (const helper of ["findAddressLocalities", "applyAddressLocality", "formatAddressLocality", "createIndexedDbPhotoDraftStore", "validatePhotoMinimums", "SubmissionConfirmation"]) assert.ok(form.includes(helper));
   assert.match(form, /4 Exterior.*4 Interior.*1 Mechanical.*1 Condition/);
   assert.doesNotMatch(category, /demo-five-type-hint|getPhotoTypeOptions/);
@@ -596,7 +566,7 @@ test("rendered category requires Exterior and limits Interior N/A to optional fe
     const { DemoFivePhotoEditor, photoLabel } = await import("../components/photographer-guide/demo-five-photo-editor.tsx");
     const { DemoFiveSubmissionForm } = await import("../components/photographer-guide/demo-five-submission-form.tsx");
     const formHtml = renderToStaticMarkup(createElement(DemoFiveSubmissionForm, { storageOrigin: "https://storage.example.com" }));
-    assert.match(formHtml, /Step 1 of 3/);
+    assert.match(formHtml, /Step 1 of 2/);
     assert.deepEqual([
       photoLabel("front"), photoLabel("exterior_ac_condenser"), photoLabel("roof_soffit_and_gutters"),
       photoLabel("hallway_room_layout"), photoLabel("kitchen_under_sink_plumbing"), photoLabel("basement_window_and_egress"),

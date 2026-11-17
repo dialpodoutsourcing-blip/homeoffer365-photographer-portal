@@ -37,8 +37,6 @@ function manifest(overrides = {}) {
       name: "  Ada Lovelace  ",
       email: "  ADA@EXAMPLE.COM  ",
       phone: "  (555) 123-4567  ",
-      paymentMethod: "  Invoice  ",
-      paymentUrl: "  https://payments.example.com/ada  ",
     },
     propertyAddress: "  123 Main Street, Philadelphia, PA 19103  ",
     photos: [
@@ -205,13 +203,12 @@ test("Other accepts only its own type and never replaces required photos or perm
   rejects(validateDraftPhoto(photo({ category: "" })));
 });
 
-test("submission normalizes contact/address fields and lowercases photographer email", () => {
+test("submission normalizes homeowner contact and address without payment data", () => {
   const input = manifest();
   const result = validateSubmissionManifest(input);
   assert.equal(result.ok, true);
   assert.deepEqual(result.value.photographer, {
     name: "Ada Lovelace", email: "ada@example.com", phone: "(555) 123-4567",
-    paymentMethod: "Invoice", paymentUrl: "https://payments.example.com/ada",
   });
   assert.equal(result.value.propertyAddress, "123 Main Street, Philadelphia, PA 19103");
   assert.equal(result.value.photos[0].photoName, "Front elevation");
@@ -224,8 +221,6 @@ test("required contact/address fields enforce their exact maximum lengths", () =
     ["name", 200, "a".repeat(200)],
     ["email", 320, `${"a".repeat(308)}@example.com`],
     ["phone", 50, "1".repeat(50)],
-    ["paymentMethod", 100, "a".repeat(100)],
-    ["paymentUrl", 2048, `https://example.com/${"a".repeat(2028)}`],
   ]) {
     assert.equal(boundary.length, max);
     assert.equal(validateSubmissionManifest(manifest({ photographer: { ...input.photographer, [field]: boundary } })).ok, true, field);
@@ -249,12 +244,9 @@ test("submission enforces the email limit after Unicode lowercasing", () => {
   assert.equal(result.value.photographer.email.length, 320);
 });
 
-test("submission rejects malformed email and non-HTTPS or credential-bearing payment URLs", () => {
+test("submission rejects malformed homeowner email", () => {
   for (const email of ["ada", "ada@example", "a b@example.com", "a@@example.com"]) {
     rejects(validateSubmissionManifest(manifest({ photographer: { ...manifest().photographer, email } })));
-  }
-  for (const paymentUrl of ["http://example.com", "javascript:alert(1)", "https://", "https://user:secret@example.com", "/pay"]) {
-    rejects(validateSubmissionManifest(manifest({ photographer: { ...manifest().photographer, paymentUrl } })));
   }
 });
 

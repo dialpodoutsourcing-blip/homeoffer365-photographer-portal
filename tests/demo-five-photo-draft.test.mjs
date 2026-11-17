@@ -21,7 +21,7 @@ function draft(overrides = {}) {
     draftKey: createPhotoDraftKey(propertyAddress, browserDraftId),
     browserDraftId,
     propertyAddress,
-    photographer: { name: "Ada", email: "", phone: "", paymentMethod: "", paymentUrl: "" },
+    photographer: { name: "Ada", email: "", phone: "" },
     notApplicable: [{ category: "interior", photoType: "basement" }],
     updatedAt: "2026-11-13T12:00:00.000Z",
     photos: [{
@@ -78,6 +78,22 @@ test("new databases upgrade to v1 and round-trip metadata, N/A, unfinished field
   assert.equal(db.version, 1);
   assert.deepEqual([...db.objectStoreNames], [STORE_NAME]);
   db.close();
+});
+
+test("legacy drafts retain extra payment fields while current drafts do not require them", async () => {
+  const factory = new IDBFactory();
+  const store = createIndexedDbPhotoDraftStore(factory);
+  const current = draft();
+  await store.save(current);
+  assert.deepEqual((await store.load(current.draftKey)).photographer, { name: "Ada", email: "", phone: "" });
+
+  const legacy = draft({
+    browserDraftId: "legacy-browser",
+    draftKey: createPhotoDraftKey("123 Main Street", "legacy-browser"),
+    photographer: { name: "Grace", email: "grace@example.com", phone: "555", paymentMethod: "Check", paymentUrl: "https://example.com/pay" },
+  });
+  await store.save(legacy);
+  assert.deepEqual((await store.load(legacy.draftKey)).photographer, legacy.photographer);
 });
 
 test("Other photos round-trip alongside existing draft photos and reject unrelated photo types", async () => {

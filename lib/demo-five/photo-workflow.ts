@@ -129,16 +129,14 @@ export type NotApplicableSelection = {
   photoType: PhotoType;
 };
 
-export type PhotographerDetails = {
+export type HomeownerDetails = {
   name: string;
   email: string;
   phone: string;
-  paymentMethod: string;
-  paymentUrl: string;
 };
 
 export type PhotoSubmissionManifest = {
-  photographer: PhotographerDetails;
+  photographer: HomeownerDetails;
   propertyAddress: string;
   photos: PhotoMetadata[];
   notApplicable: NotApplicableSelection[];
@@ -246,7 +244,7 @@ export function validatePhotoMinimums(photos: readonly Pick<PhotoMetadata, "cate
 
 export function validateSubmissionManifest(input: unknown): ValidationResult<PhotoSubmissionManifest> {
   if (!record(input) || !record(input.photographer) || !Array.isArray(input.photos) || !Array.isArray(input.notApplicable)) {
-    return { ok: false, error: "Photographer details, photos, and N/A selections are required." };
+    return { ok: false, error: "Homeowner details, photos, and N/A selections are required." };
   }
   const name = text(input.photographer.name, 200);
   const email = text(
@@ -254,19 +252,9 @@ export function validateSubmissionManifest(input: unknown): ValidationResult<Pho
     320,
   );
   const phone = text(input.photographer.phone, 50);
-  const paymentMethod = text(input.photographer.paymentMethod, 100);
-  const paymentUrl = text(input.photographer.paymentUrl, 2048);
   const propertyAddress = text(input.propertyAddress, 500);
-  if (!name || !email || !phone || !paymentMethod || !paymentUrl || !propertyAddress || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { ok: false, error: "Complete all photographer, payment, and property address fields within their text limits." };
-  }
-  try {
-    const url = new URL(paymentUrl);
-    if (url.protocol !== "https:" || url.username || url.password) {
-      return { ok: false, error: "Payment URL must use HTTPS without embedded credentials." };
-    }
-  } catch {
-    return { ok: false, error: "Enter a valid HTTPS payment URL." };
+  if (!name || !email || !phone || !propertyAddress || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: "Complete all homeowner contact and property address fields within their text limits." };
   }
   if (input.photos.length > MAX_PHOTOS) return { ok: false, error: "A submission may contain at most 100 photos." };
   const photos: PhotoMetadata[] = [];
@@ -296,6 +284,6 @@ export function validateSubmissionManifest(input: unknown): ValidationResult<Pho
   }
   return {
     ok: true,
-    value: { photographer: { name, email, phone, paymentMethod, paymentUrl }, propertyAddress, photos, notApplicable },
+    value: { photographer: { name, email, phone }, propertyAddress, photos, notApplicable },
   };
 }

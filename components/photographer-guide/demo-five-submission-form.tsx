@@ -3,7 +3,7 @@
 import { useEffect, useReducer, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
 import { applyAddressLocality, findAddressLocalities, formatAddressLocality, type AddressLocality } from "@/lib/address-suggestions";
 import { createIndexedDbPhotoDraftStore, createPhotoDraftKey, PhotoDraftConflictError, type PhotoDraftStore } from "@/lib/demo-five/photo-draft-store";
-import { PHOTO_CATEGORIES, PHOTO_MINIMUMS, countPhotosByCategory, validatePhotoMinimums, validateSubmissionManifest, type DraftPhoto, type PhotoCategory, type PhotoType, type PhotographerDetails } from "@/lib/demo-five/photo-workflow";
+import { PHOTO_CATEGORIES, PHOTO_MINIMUMS, countPhotosByCategory, validatePhotoMinimums, validateSubmissionManifest, type DraftPhoto, type HomeownerDetails, type PhotoCategory, type PhotoType } from "@/lib/demo-five/photo-workflow";
 import { preparePhoto } from "@/lib/demo-five/prepare-photo";
 import { uploadPhotoDraft, uploadToSignedPhotoUrl, type UploadPhotoDraft, type UploadProgress } from "@/lib/demo-five/upload-photo-draft";
 import { DemoFivePhotoCategory } from "./demo-five-photo-category";
@@ -13,11 +13,10 @@ import { initialPhotoFormState, photoFormReducer, validateWizardStep, wizardStep
 import { SubmissionConfirmation } from "./submission-confirmation";
 
 const addressListId = "demo-five-address-suggestions";
-const paymentMethods = ["ACH / Bank Transfer", "Zelle", "Venmo", "PayPal", "Cash App", "Check", "Other"] as const;
 function emptyDraft(): UploadPhotoDraft {
   const browserDraftId = crypto.randomUUID();
   return { version: 1, browserDraftId, draftKey: createPhotoDraftKey("", browserDraftId), propertyAddress: "",
-    photographer: { name: "", email: "", phone: "", paymentMethod: "", paymentUrl: "" }, photos: [], notApplicable: [], updatedAt: new Date().toISOString() };
+    photographer: { name: "", email: "", phone: "" }, photos: [], notApplicable: [], updatedAt: new Date().toISOString() };
 }
 function storageMessage(error: unknown) {
   if (error instanceof PhotoDraftConflictError) return error.message;
@@ -120,7 +119,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     display(value);
     void persist(value, previous.draftKey).then(() => setNotice("Draft saved on this device.")).catch(error => setError(storageMessage(error)));
   }
-  function photographerField(field: keyof PhotographerDetails, value: string) {
+  function homeownerField(field: keyof HomeownerDetails, value: string) {
     if (current.current) updateFields({ photographer: { ...current.current.photographer, [field]: value } });
   }
   async function updatePhotos(photos: DraftPhoto[]) {
@@ -193,8 +192,8 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
     if (submittingRef.current || busy || !current.current) return;
     const validation = validateWizardStep(step, current.current);
     if (!validation.ok) { setError(validation.error); return; }
-    if (step < 3) { setError(""); setNotice(""); setStep((step + 1) as WizardStep); return; }
-    for (const previousStep of [1, 2] as const) {
+    if (step < 2) { setError(""); setNotice(""); setStep(2); return; }
+    for (const previousStep of [1] as const) {
       const result = validateWizardStep(previousStep, current.current);
       if (!result.ok) { setStep(previousStep); setError(result.error); return; }
     }
@@ -233,13 +232,13 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   const counts = countPhotosByCategory(draft?.photos ?? []);
   const submissionValidation = draft ? validateSubmissionManifest(draft) : null;
   const readyToSubmit = submissionValidation?.ok === true;
-  const incompleteDetails = draft ? ([1, 2] as const)
+  const incompleteDetails = draft ? ([1] as const)
     .map(step => ({ step, validation: validateWizardStep(step, draft) }))
     .find(({ validation }) => !validation.ok) : undefined;
   const submissionRequirement = incompleteDetails && !incompleteDetails.validation.ok ? incompleteDetails.validation.error
     : submissionValidation && !submissionValidation.ok ? submissionValidation.error
     : minimums.ok ? "All photo minimums met. Review your details, then submit." : minimums.error;
-  const stepTitles = ["User Information", "Payment Information", "Property Photos"];
+  const stepTitles = ["Homeowner Information", "Property Photos"];
   function back() { setStep((step - 1) as WizardStep); setError(""); setNotice(""); closeSuggestions(); }
   function tabKey(event: KeyboardEvent<HTMLButtonElement>, category: PhotoCategory) {
     const index = PHOTO_CATEGORIES.indexOf(category);
@@ -252,24 +251,22 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
   return <section id="submit-photos" className="demo-five-photo-form" aria-labelledby="demo-five-submit-title">
     <header><h2 id="demo-five-submit-title">Your property photo checklist</h2><p>Save your visit on this device, then submit all your photos together.</p></header>
     <DemoFiveDraftRestore drafts={savedDrafts} unreadableCount={unreadableDrafts} disabled={submitting || busy} onRestore={value => void restore(value)} />
-    <div className="demo-five-step-progress"><p role="status" aria-live="polite">{`Step ${step} of 3`}</p><ol aria-label="Submission progress">{stepTitles.map((title, index) => <li key={title} aria-current={step === index + 1 ? "step" : undefined} className={step >= index + 1 ? "is-reached" : ""}><span className="sr-only">{title}</span></li>)}</ol></div>
+    <div className="demo-five-step-progress"><p role="status" aria-live="polite">{`Step ${step} of 2`}</p><ol aria-label="Submission progress">{stepTitles.map((title, index) => <li key={title} aria-current={step === index + 1 ? "step" : undefined} className={step >= index + 1 ? "is-reached" : ""}><span className="sr-only">{title}</span></li>)}</ol></div>
     <h3 className="demo-five-step-title" ref={stepHeading} tabIndex={-1}>{stepTitles[step - 1]}</h3>
     <form onSubmit={submit} noValidate>
       <fieldset disabled={disabled} className="demo-five-details">
         <legend className="sr-only">{stepTitles[step - 1]}</legend>
         <div className="demo-five-fields">
-          {step === 1 && <><label>Photographer&apos;s Name<input ref={nameInput} type="text" name="photographerName" autoComplete="name" maxLength={200} required value={draft?.photographer.name ?? ""} onChange={event => photographerField("name", event.target.value)} /></label>
-          <label>Email<input type="email" name="email" autoComplete="email" maxLength={320} required value={draft?.photographer.email ?? ""} onChange={event => photographerField("email", event.target.value)} /></label>
-          <label>Phone<input type="tel" name="phone" autoComplete="tel" maxLength={50} required value={draft?.photographer.phone ?? ""} onChange={event => photographerField("phone", event.target.value)} /></label></>}
-          {step === 3 && <div className="demo-five-address"><label htmlFor="demo-five-address">Property Address</label><input id="demo-five-address" type="text" name="propertyAddress" autoComplete="street-address" maxLength={500} required role="combobox" aria-autocomplete="list" aria-expanded={suggestionsOpen && suggestions.length > 0} aria-controls={addressListId} aria-activedescendant={suggestionsOpen && activeSuggestion >= 0 ? `${addressListId}-${activeSuggestion}` : undefined} value={draft?.propertyAddress ?? ""} onChange={event => { updateFields({ propertyAddress: event.target.value }); setSuggestionsOpen(true); setActiveSuggestion(-1); }} onFocus={() => setSuggestionsOpen(true)} onBlur={closeSuggestions} onKeyDown={addressKey} />
+          {step === 1 && <><label>Homeowner&apos;s Name<input ref={nameInput} type="text" name="homeownerName" autoComplete="name" maxLength={200} required value={draft?.photographer.name ?? ""} onChange={event => homeownerField("name", event.target.value)} /></label>
+          <label>Email<input type="email" name="email" autoComplete="email" maxLength={320} required value={draft?.photographer.email ?? ""} onChange={event => homeownerField("email", event.target.value)} /></label>
+          <label>Phone<input type="tel" name="phone" autoComplete="tel" maxLength={50} required value={draft?.photographer.phone ?? ""} onChange={event => homeownerField("phone", event.target.value)} /></label></>}
+          {step === 2 && <div className="demo-five-address"><label htmlFor="demo-five-address">Property Address</label><input id="demo-five-address" type="text" name="propertyAddress" autoComplete="street-address" maxLength={500} required role="combobox" aria-autocomplete="list" aria-expanded={suggestionsOpen && suggestions.length > 0} aria-controls={addressListId} aria-activedescendant={suggestionsOpen && activeSuggestion >= 0 ? `${addressListId}-${activeSuggestion}` : undefined} value={draft?.propertyAddress ?? ""} onChange={event => { updateFields({ propertyAddress: event.target.value }); setSuggestionsOpen(true); setActiveSuggestion(-1); }} onFocus={() => setSuggestionsOpen(true)} onBlur={closeSuggestions} onKeyDown={addressKey} />
             <small>Suggested service areas in Pennsylvania</small>
             {suggestionsOpen && suggestions.length > 0 && <div id={addressListId} className="demo-five-address-options" role="listbox" aria-label="Pennsylvania service areas">{suggestions.map((locality, index) => <button type="button" id={`${addressListId}-${index}`} key={`${locality.city}-${locality.zip}`} role="option" aria-selected={activeSuggestion === index} tabIndex={-1} onPointerDown={event => { event.preventDefault(); selectLocality(locality); }} onClick={() => selectLocality(locality)}>{formatAddressLocality(locality)}</button>)}</div>}
           </div>}
-          {step === 2 && <><label>Payment Method<select name="paymentMethod" required value={draft?.photographer.paymentMethod ?? ""} onChange={event => photographerField("paymentMethod", event.target.value)}><option value="" disabled>Select a payment method</option>{draft?.photographer.paymentMethod && !paymentMethods.includes(draft.photographer.paymentMethod as typeof paymentMethods[number]) && <option value={draft.photographer.paymentMethod}>{draft.photographer.paymentMethod}</option>}{paymentMethods.map(method => <option key={method} value={method}>{method}</option>)}</select></label>
-          <label>Payment URL<input type="url" name="paymentUrl" inputMode="url" maxLength={2048} required pattern="https://.*" value={draft?.photographer.paymentUrl ?? ""} onChange={event => photographerField("paymentUrl", event.target.value)} placeholder="https://…" /></label></>}
         </div>
       </fieldset>
-      {step === 3 && <>
+      {step === 2 && <>
         <p className="demo-five-orientation-guidance"><strong>Take all photos horizontally (landscape orientation).</strong><span>Choose the category and add photo details after capture.</span></p>
         <input ref={camera} type="file" accept="image/*" capture="environment" hidden disabled={disabled} onChange={selected} />
         <input ref={picker} type="file" accept="image/*" hidden disabled={disabled} onChange={selected} />
@@ -286,7 +283,7 @@ export function DemoFiveSubmissionForm({ storageOrigin }: { storageOrigin: strin
       <p className="demo-five-notice" role="status" aria-live="polite">{notice || (!draft ? "Loading saved visits…" : "Photos stay on this device until you submit.")}</p>
       {error && <p className="demo-five-error" role="alert">{error}</p>}
       {terminalFailure && <button type="button" disabled={busy || submitting} onClick={() => void restartExpired()}>Reset expired submission and keep photos</button>}
-      <div className="demo-five-submit">{step > 1 && <button type="button" className="demo-five-back" disabled={busy || submitting} onClick={back}>Back</button>}{step === 3 && <><small id="demo-five-submission-requirements" role="status" aria-live="polite">{submissionRequirement}</small>{incompleteDetails && <button type="button" disabled={disabled} aria-describedby="demo-five-submission-requirements" onClick={() => { setStep(incompleteDetails.step); setError(""); setNotice(""); closeSuggestions(); }}>{`Complete ${stepTitles[incompleteDetails.step - 1]}`}</button>}</>}<button className="demo-five-primary" type="submit" aria-describedby={step === 3 ? "demo-five-submission-requirements" : undefined} disabled={!draft || busy || submitting || (step === 3 && (!online || !readyToSubmit || terminalFailure))}>{step < 3 ? "Next" : submitting ? "Submitting…" : locked ? "Retry submission" : "Submit All Photos"}</button></div>
+      <div className="demo-five-submit">{step > 1 && <button type="button" className="demo-five-back" disabled={busy || submitting} onClick={back}>Back</button>}{step === 2 && <><small id="demo-five-submission-requirements" role="status" aria-live="polite">{submissionRequirement}</small>{incompleteDetails && <button type="button" disabled={disabled} aria-describedby="demo-five-submission-requirements" onClick={() => { setStep(incompleteDetails.step); setError(""); setNotice(""); closeSuggestions(); }}>{`Complete ${stepTitles[incompleteDetails.step - 1]}`}</button>}</>}<button className="demo-five-primary" type="submit" aria-describedby={step === 2 ? "demo-five-submission-requirements" : undefined} disabled={!draft || busy || submitting || (step === 2 && (!online || !readyToSubmit || terminalFailure))}>{step < 2 ? "Next" : submitting ? "Submitting…" : locked ? "Retry submission" : "Submit All Photos"}</button></div>
     </form>
     {edit && <DemoFivePhotoEditor key={editorRevision} edit={edit} onSave={savePhoto} onClose={() => dispatch({ type: "closeEditor" })} />}
     {submitted && <SubmissionConfirmation onClose={() => { setSubmitted(false); requestAnimationFrame(() => nameInput.current?.focus()); }} />}
